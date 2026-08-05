@@ -1,0 +1,25 @@
+diff --git a/kernel/sched/psi.c b/kernel/sched/psi.c
+--- a/kernel/sched/psi.c
++++ b/kernel/sched/psi.c
+@@ -1004,10 +1004,11 @@ void psi_task_switch(struct task_struct *prev, struct task_struct *next,
+ 		 */
+ 		if ((prev->psi_flags ^ next->psi_flags) & ~TSK_ONCPU) {
+ 			clear &= ~TSK_ONCPU;
+-			for (; group; group = group->parent)
+-				psi_group_change(group, cpu, clear, set, wake_clock);
++			for_each_group(group, common)
++				psi_group_change(group, cpu, clear, set, now, wake_clock);
+ 		}
+ 	}
++	psi_write_end(cpu);
+ }
+ 
+ #ifdef CONFIG_IRQ_TIME_ACCOUNTING
+@@ -1019,6 +1020,7 @@ void psi_account_irqtime(struct rq *rq, struct task_struct *curr, struct task_st
+ 	u64 *psi_time;
+ 	s64 delta;
+ 	u64 irq;
++	u64 now;
+ 
+ 	if (!curr->pid)
+ 		return;

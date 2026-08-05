@@ -1,0 +1,115 @@
+diff --git a/include/trace/hooks/blk.h b/include/trace/hooks/blk.h
+--- a/include/trace/hooks/blk.h
++++ b/include/trace/hooks/blk.h
+@@ -52,9 +52,5 @@ DECLARE_HOOK(android_vh_bio_add_page_merge_bypass,
+ 	TP_PROTO(struct bio *bio, bool *skip),
+ 	TP_ARGS(bio, skip));
+ 
+-DECLARE_HOOK(android_vh_bio_add_page_merge_bypass,
+-	TP_PROTO(struct bio *bio, bool *skip),
+-	TP_ARGS(bio, skip));
+-
+ #endif /* _TRACE_HOOK_BLK_H */
+ /* This part must be outside protection */
+ #include <trace/define_trace.h>
+diff --git a/security/selinux/avc.c b/security/selinux/avc.c
+--- a/security/selinux/avc.c
++++ b/security/selinux/avc.c
+@@ -27,6 +27,7 @@
+ #include "avc.h"
+ #include "avc_ss.h"
+ #include "classmap.h"
++#include "hash.h"
+ #ifdef CONFIG_SECURITY_SEATD
+ #include "sea_signal.h"
+ #endif
+diff --git a/arch/arm64/mm/mmu.c b/arch/arm64/mm/mmu.c
+--- a/arch/arm64/mm/mmu.c
++++ b/arch/arm64/mm/mmu.c
+@@ -298,6 +298,9 @@ static void alloc_init_cont_pmd(pud_t *pudp, unsigned long addr,
+ #else
+ 		pmd_phys = pgtable_alloc(PMD_SHIFT);
+ #endif
++		pmdp = pmd_set_fixmap(pmd_phys);
++		init_clear_pgtable(pmdp);
++		pmdp += pmd_index(addr);
+ 		__pud_populate(pudp, pmd_phys, pudval);
+ 	} else {
+ 		BUG_ON(pud_bad(pud));
+diff --git a/arch/arm64/include/asm/kvm_asm.h b/arch/arm64/include/asm/kvm_asm.h
+--- a/arch/arm64/include/asm/kvm_asm.h
++++ b/arch/arm64/include/asm/kvm_asm.h
+@@ -116,6 +116,8 @@ enum __kvm_host_smccc_func {
+ 	__KVM_HOST_SMCCC_FUNC___pkvm_host_hvc_pd,
+ 	__KVM_HOST_SMCCC_FUNC___pkvm_stage2_snapshot,
+ 	__KVM_HOST_SMCCC_FUNC___pkvm_host_iommu_iotlb_sync_map,
++	__KVM_HOST_SMCCC_FUNC___pkvm_hyp_pool_report_free_pages,
++	__KVM_HOST_SMCCC_FUNC___pkvm_hyp_pool_report_min_free_pages,
+ 
+ 	/*
+ 	 * Start of the dynamically registered hypercalls. Start a bit
+diff --git a/arch/arm64/kvm/hyp/nvhe/hyp-main.c b/arch/arm64/kvm/hyp/nvhe/hyp-main.c
+--- a/arch/arm64/kvm/hyp/nvhe/hyp-main.c
++++ b/arch/arm64/kvm/hyp/nvhe/hyp-main.c
+@@ -1721,6 +1721,8 @@ static const hcall_t host_hcall[] = {
+ 	HANDLE_FUNC(__pkvm_host_hvc_pd),
+ 	HANDLE_FUNC(__pkvm_stage2_snapshot),
+ 	HANDLE_FUNC(__pkvm_host_iommu_iotlb_sync_map),
++	HANDLE_FUNC(__pkvm_hyp_pool_report_free_pages),
++	HANDLE_FUNC(__pkvm_hyp_pool_report_min_free_pages),
+ };
+ 
+ static void handle_host_hcall(struct kvm_cpu_context *host_ctxt)
+diff --git a/arch/arm64/kvm/hyp/nvhe/page_alloc.c b/arch/arm64/kvm/hyp/nvhe/page_alloc.c
+--- a/arch/arm64/kvm/hyp/nvhe/page_alloc.c
++++ b/arch/arm64/kvm/hyp/nvhe/page_alloc.c
+@@ -167,11 +167,29 @@ static void __hyp_put_page(struct hyp_pool *pool, struct hyp_page *p)
+ 	u64 free_pages;
+ 	u16 seen_refcount, old_refcount;
+ 
+-	if (hyp_page_ref_dec_and_test(p)) {
+-		hyp_spin_lock(&pool->lock);
++	for (old_refcount = READ_ONCE(p->refcount); ; old_refcount = seen_refcount) {
++		WARN_ON(old_refcount == 0);
++		if (old_refcount == 1) {
++			/*
++			 * Acquire the pool lock before we drop the refcount to
++			 * zero, thus avoiding a race with __find_buddy_avail()
++			 * finding us before we initialise our in-page
++			 * list_head.
++			 */
++			hyp_spin_lock(&pool->lock);
++		}
++		seen_refcount = cmpxchg_relaxed(
++			&p->refcount, old_refcount, old_refcount - 1);
++		if (seen_refcount == old_refcount)
++			break;
++		if (old_refcount == 1)
++			hyp_spin_unlock(&pool->lock);
++	}
++
++	if (old_refcount == 1) {
+ 		free_pages = pool->free_pages + (1ULL << p->order);
+ 		__hyp_attach_page(pool, p);
+-		WRITE_ONCE(pool->free_pages, free_pages);
++		update_free_pages(pool, free_pages);
+ 		hyp_spin_unlock(&pool->lock);
+ 	}
+ }
+diff --git a/drivers/android/vendor_hooks.c b/drivers/android/vendor_hooks.c
+--- a/drivers/android/vendor_hooks.c
++++ b/drivers/android/vendor_hooks.c
+@@ -83,5 +83,6 @@
+ #include <trace/hooks/xhci.h>
+ #include <trace/hooks/typec.h>
+ #include <trace/events/android_vendor_lmk.h>
++#include <trace/hooks/ngksm.h>
+ #include <trace/hooks/swapfile.h>
+ #include <trace/hooks/rcu.h>
+@@ -757,5 +758,6 @@ EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_folio_remove_rmap);
+ EXPORT_TRACEPOINT_SYMBOL_GPL(android_rvh_gup_longterm_locked);
+ EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_bio_add_page_merge_bypass);
++EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_ngksm);
+ EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_resched_curr_lazy);
+ EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_restore_curr_resched);
+ EXPORT_TRACEPOINT_SYMBOL_GPL(android_vh_clear_curr_lazy);

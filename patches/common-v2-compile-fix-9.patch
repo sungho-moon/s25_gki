@@ -1,0 +1,39 @@
+diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+index 1cc9a876b..0dfc131ba 100644
+--- a/drivers/base/platform.c
++++ b/drivers/base/platform.c
+@@ -561,6 +561,7 @@ static void platform_device_release(struct device *dev)
+ 	kfree(pa->pdev.dev.platform_data);
+ 	kfree(pa->pdev.mfd_cell);
+ 	kfree(pa->pdev.resource);
++	kfree(pa->pdev.driver_override);
+ 	kfree(pa);
+ }
+ 
+@@ -1308,6 +1309,9 @@ static int platform_match(struct device *dev, struct device_driver *drv)
+ 	struct platform_driver *pdrv = to_platform_driver(drv);
+ 	int ret;
+ 
++	if (pdev->driver_override)
++		return !strcmp(pdev->driver_override, drv->name);
++
+ 	/* When driver_override is set, only bind to the matching driver */
+ 	ret = device_match_driver_override(dev, drv);
+ 	if (ret >= 0)
+diff --git a/include/linux/platform_device.h b/include/linux/platform_device.h
+index eccbde441..f79653f1e 100644
+--- a/include/linux/platform_device.h
++++ b/include/linux/platform_device.h
+@@ -32,6 +32,12 @@ struct platform_device {
+ 	struct resource	*resource;
+ 
+ 	const struct platform_device_id	*id_entry;
++	/*
++	 * Preserve the Samsung 6.6.98 layout and legacy in-kernel users while
++	 * the generic driver override is stored in struct device.
++	 */
++	const char *driver_override;
++
+ 
+ 	/* MFD cell pointer */
+ 	struct mfd_cell *mfd_cell;

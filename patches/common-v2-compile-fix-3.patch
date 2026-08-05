@@ -1,0 +1,156 @@
+diff --git a/include/linux/dma-buf.h b/include/linux/dma-buf.h
+--- a/include/linux/dma-buf.h
++++ b/include/linux/dma-buf.h
+@@ -815,6 +815,7 @@ int dma_buf_account_task(struct dma_buf *dmabuf, struct task_struct *task);
+ void dma_buf_unaccount_task(struct dma_buf *dmabuf, struct task_struct *task);
+ int copy_dmabuf_info(u64 clone_flags, struct task_struct *task);
+ void put_dmabuf_info(struct task_struct *task);
++void put_dmabuf_info_ptr(struct task_dma_buf_info *dmabuf_info);
+ 
+ #else /* CONFIG_DMA_SHARED_BUFFER */
+ 
+@@ -826,4 +827,5 @@ static inline int copy_dmabuf_info(u64 clone_flags,
+ 				   struct task_struct *task) { return 0; }
+ static inline void put_dmabuf_info(struct task_struct *task) {}
++static inline void put_dmabuf_info_ptr(struct task_dma_buf_info *dmabuf_info) {}
+ 
+ #endif /* CONFIG_DMA_SHARED_BUFFER */
+diff --git a/drivers/dma-buf/dma-buf.c b/drivers/dma-buf/dma-buf.c
+--- a/drivers/dma-buf/dma-buf.c
++++ b/drivers/dma-buf/dma-buf.c
+@@ -620,23 +620,28 @@ int copy_dmabuf_info(u64 clone_flags, struct task_struct *task)
+ 	return 0;
+ }
+ 
+-void put_dmabuf_info(struct task_struct *task)
++void put_dmabuf_info_ptr(struct task_dma_buf_info *dmabuf_info)
+ {
+-	if (!task->dmabuf_info)
++	if (!dmabuf_info)
+ 		return;
+ 
+-	if (!refcount_dec_and_test(&task->dmabuf_info->refcnt))
++	if (!refcount_dec_and_test(&dmabuf_info->refcnt))
+ 		return;
+ 
+-	if (task->dmabuf_info->rss)
+-		pr_alert("destroying task with non-zero dmabuf rss %lu\n", task->dmabuf_info->rss);
++	if (dmabuf_info->rss)
++		pr_alert("destroying task with non-zero dmabuf rss %lu\n", dmabuf_info->rss);
+ 
+-	if (!list_empty(&task->dmabuf_info->dmabufs) || task->dmabuf_info->dmabuf_count > 0)
++	if (!list_empty(&dmabuf_info->dmabufs) || dmabuf_info->dmabuf_count > 0)
+ 		pr_alert("destroying task with non-empty dmabuf list %zu %u\n",
+-			 list_count_nodes(&task->dmabuf_info->dmabufs),
+-			 task->dmabuf_info->dmabuf_count);
++			 list_count_nodes(&dmabuf_info->dmabufs),
++			 dmabuf_info->dmabuf_count);
+ 
+-	kfree(task->dmabuf_info);
++	kfree(dmabuf_info);
++}
++
++void put_dmabuf_info(struct task_struct *task)
++{
++	put_dmabuf_info_ptr(task->dmabuf_info);
+ }
+ 
+ static int dma_buf_mmap_internal(struct file *file, struct vm_area_struct *vma)
+diff --git a/kernel/fork.c b/kernel/fork.c
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -118,5 +118,7 @@
+ #undef CREATE_TRACE_POINTS
+ #include <trace/hooks/sched.h>
++#include <trace/hooks/dtask.h>
++#include <trace/hooks/mm.h>
+ 
+ #ifdef CONFIG_KDP
+ #include <linux/kdp.h>
+@@ -1407,7 +1409,7 @@ static inline void __mmput(struct mm_struct *mm)
+ 	exit_mmap(mm);
+ 	mm_put_huge_zero_page(mm);
+ 	set_mm_exe_file(mm, NULL);
+-	put_dmabuf_info(mm->dmabuf_info);
++	put_dmabuf_info_ptr(mm->dmabuf_info);
+ 	if (!list_empty(&mm->mmlist)) {
+ 		spin_lock(&mmlist_lock);
+ 		list_del(&mm->mmlist);
+@@ -3635,7 +3637,7 @@ int ksys_unshare(unsigned long unshare_flags)
+ 		}
+ 
+ 		task_unlock(current);
+-		put_dmabuf_info(dmabuf_info);
++		put_dmabuf_info_ptr(dmabuf_info);
+ 
+ 		if (new_cred) {
+ 			/* Install the new user namespace */
+@@ -3700,7 +3702,7 @@ int unshare_files(void)
+ 	dmabuf_info = task->dmabuf_info;
+ 	task->dmabuf_info = NULL;
+ 	task_unlock(task);
+-	put_dmabuf_info(dmabuf_info);
++	put_dmabuf_info_ptr(dmabuf_info);
+ 	put_files_struct(old);
+ 	return 0;
+ }
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -36,6 +36,7 @@
+ #include <linux/statfs.h>
+ #include <linux/uaccess.h>
+ #include <linux/loop.h>
++#include <trace/hooks/blk.h>
+ 
+ #define LOOP_IDLE_WORKER_TIMEOUT (60 * HZ)
+ #define LOOP_DEFAULT_HW_Q_DEPTH 128
+diff --git a/mm/gup.c b/mm/gup.c
+--- a/mm/gup.c
++++ b/mm/gup.c
+@@ -1964,7 +1964,7 @@ static unsigned long collect_longterm_unpinnable_pages(
+ {
+ 	unsigned long i, collected = 0;
+ 	struct folio *prev_folio = NULL;
+-	bool drain_allow = true;
++	int drained = 0;
+ 
+ 	for (i = 0; i < nr_pages; i++) {
+ 		struct folio *folio = page_folio(pages[i]);
+diff --git a/fs/f2fs/super.c b/fs/f2fs/super.c
+--- a/fs/f2fs/super.c
++++ b/fs/f2fs/super.c
+@@ -133,6 +133,7 @@ enum {
+ 	Opt_noinline_data,
+ 	Opt_data_flush,
+ 	Opt_reserve_root,
++	Opt_reserve_node,
+ 	Opt_flush_group,
+ 	Opt_resgid,
+ 	Opt_resuid,
+@@ -213,6 +214,7 @@ static match_table_t f2fs_tokens = {
+ 	{Opt_noinline_data, "noinline_data"},
+ 	{Opt_data_flush, "data_flush"},
+ 	{Opt_reserve_root, "reserve_root=%u"},
++	{Opt_reserve_node, "reserve_node=%u"},
+ 	{Opt_flush_group, "flush_group=%u"},
+ 	{Opt_resgid, "resgid=%u"},
+ 	{Opt_resuid, "resuid=%u"},
+@@ -445,6 +447,7 @@ static inline void limit_reserve_root(struct f2fs_sb_info *sbi)
+ {
+-	block_t limit = min((sbi->user_block_count >> 3),
++	block_t block_limit = min((sbi->user_block_count >> 3),
+ 			sbi->user_block_count - sbi->reserved_blocks - sbi->sec_reserved_blocks);
++	block_t node_limit = sbi->total_node_count >> 3;
+ 
+ 	/* limit is 12.5% */
+ 	if (test_opt(sbi, RESERVE_ROOT) &&
+@@ -2380,7 +2383,7 @@ static void default_options(struct f2fs_sb_info *sbi, bool remount)
+ 	set_opt(sbi, POSIX_ACL);
+ #endif
+ 
+-	f2fs_build_fault_attr(sbi, 0, 0);
++	f2fs_build_fault_attr(sbi, 0, 0, FAULT_ALL);
+ 
+ 	f2fs_set_lookup_mode(sbi, LOOKUP_PERF);
+ 

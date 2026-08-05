@@ -1,0 +1,175 @@
+diff --git a/fs/f2fs/segment.c b/fs/f2fs/segment.c
+--- a/fs/f2fs/segment.c
++++ b/fs/f2fs/segment.c
+@@ -414,11 +414,11 @@ int f2fs_commit_atomic_write(struct inode *inode)
+ 
+ 	f2fs_down_write(&fi->i_gc_rwsem[WRITE]);
+ 	f2fs_down_write(&F2FS_I(fi->cow_inode)->i_gc_rwsem[WRITE]);
+-	f2fs_lock_op(sbi);
++	f2fs_lock_op(sbi, &lc);
+ 
+ 	err = __f2fs_commit_atomic_write(inode);
+ 
+-	f2fs_unlock_op(sbi);
++	f2fs_unlock_op(sbi, &lc);
+ 	f2fs_up_write(&F2FS_I(fi->cow_inode)->i_gc_rwsem[WRITE]);
+ 	f2fs_up_write(&fi->i_gc_rwsem[WRITE]);
+ 
+diff --git a/fs/f2fs/sysfs.c b/fs/f2fs/sysfs.c
+--- a/fs/f2fs/sysfs.c
++++ b/fs/f2fs/sysfs.c
+@@ -414,6 +414,26 @@ static ssize_t main_blkaddr_show(struct f2fs_attr *a,
+ 			(unsigned long long)MAIN_BLKADDR(sbi));
+ }
+ 
++static ssize_t __sbi_show_value(struct f2fs_attr *a,
++		struct f2fs_sb_info *sbi, char *buf,
++		unsigned char *value)
++{
++	switch (a->size) {
++	case 1:
++		return sysfs_emit(buf, "%u\n", *(u8 *)value);
++	case 2:
++		return sysfs_emit(buf, "%u\n", *(u16 *)value);
++	case 4:
++		return sysfs_emit(buf, "%u\n", *(u32 *)value);
++	case 8:
++		return sysfs_emit(buf, "%llu\n", *(u64 *)value);
++	default:
++		f2fs_bug_on(sbi, 1);
++		return sysfs_emit(buf,
++				"show sysfs node value with wrong type\n");
++	}
++}
++
+ #define SEC_MAX_VOLUME_NAME	16
+ static bool __volume_is_userdata(struct f2fs_sb_info *sbi)
+ {
+@@ -1455,6 +1475,35 @@ static ssize_t __sbi_store(struct f2fs_attr *a,
+ 		return count;
+ 	}
+ 
++	if (!strcmp(a->attr.name, "adjust_lock_priority")) {
++		if (t >= BIT(LOCK_NAME_MAX - 1))
++			return -EINVAL;
++		sbi->adjust_lock_priority = t;
++		return count;
++	}
++
++	if (!strcmp(a->attr.name, "lock_duration_priority")) {
++		if (t < NICE_TO_PRIO(MIN_NICE) || t > NICE_TO_PRIO(MAX_NICE))
++			return -EINVAL;
++		sbi->lock_duration_priority = t;
++		return count;
++	}
++
++	if (!strcmp(a->attr.name, "critical_task_priority")) {
++		if (t < NICE_TO_PRIO(MIN_NICE) || t > NICE_TO_PRIO(MAX_NICE))
++			return -EINVAL;
++		if (!capable(CAP_SYS_NICE))
++			return -EPERM;
++		sbi->critical_task_priority = t;
++		if (sbi->cprc_info.f2fs_issue_ckpt)
++			set_user_nice(sbi->cprc_info.f2fs_issue_ckpt,
++					PRIO_TO_NICE(sbi->critical_task_priority));
++		if (sbi->gc_thread && sbi->gc_thread->f2fs_gc_task)
++			set_user_nice(sbi->gc_thread->f2fs_gc_task,
++					PRIO_TO_NICE(sbi->critical_task_priority));
++		return count;
++	}
++
+ #ifdef CONFIG_F2FS_SEC_SYSFS_DISCARD_SLAB_THRESHOLD
+ 	if (!strcmp(a->attr.name, "discard_cmd_slab_thresh_MB")) {
+ 		SM_I(sbi)->dcc_info->discard_cmd_slab_thresh_cnt =
+@@ -1479,7 +1528,7 @@ static ssize_t __sbi_store(struct f2fs_attr *a,
+ 		return count;
+ 	}
+ 
+-	*ui = (unsigned int)t;
++	__sbi_store_value(a, sbi, ptr + a->offset, t);
+ 
+ 	return count;
+ }
+@@ -1651,7 +1700,8 @@ static struct f2fs_attr f2fs_attr_##_name = {
+ #define F2FS_RW_ATTR_640(struct_type, struct_name, name, elname)	\
+ 	F2FS_ATTR_OFFSET(struct_type, name, 0640,		\
+ 		f2fs_sbi_show, f2fs_sbi_store,			\
+-		offsetof(struct struct_name, elname))
++		offsetof(struct struct_name, elname),		\
++		sizeof_field(struct struct_name, elname))
+ 
+ #define F2FS_GENERAL_RO_ATTR(name) \
+ static struct f2fs_attr f2fs_attr_##name = __ATTR(name, 0444, name##_show, NULL)
+@@ -1809,6 +1859,10 @@ F2FS_SBI_GENERAL_RO_ATTR(unusable_blocks_per_sec);
+ #endif
+ F2FS_SBI_GENERAL_RW_ATTR(carve_out);
+ F2FS_SBI_GENERAL_RW_ATTR(reserved_pin_section);
++F2FS_SBI_GENERAL_RW_ATTR(max_lock_elapsed_time);
++F2FS_SBI_GENERAL_RW_ATTR(lock_duration_priority);
++F2FS_SBI_GENERAL_RW_ATTR(adjust_lock_priority);
++F2FS_SBI_GENERAL_RW_ATTR(critical_task_priority);
+ F2FS_SBI_RW_ATTR_640(sec_gc_stat, sec_stat);
+ F2FS_SBI_RW_ATTR_640(sec_io_stat, sec_stat);
+ F2FS_SBI_RW_ATTR_640(sec_fsck_stat, sec_fsck_stat);
+diff --git a/fs/exec.c b/fs/exec.c
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1265,6 +1265,5 @@ int begin_new_exec(struct linux_binprm * bprm)
+ {
+ 	struct task_struct *me = current;
+-	struct files_struct *old_files;
+ 	int retval;
+ 
+ 	/* Once we are committed compute the creds */
+@@ -1289,22 +1288,11 @@ int begin_new_exec(struct linux_binprm * bprm)
+ 	 */
+ 	io_uring_task_cancel();
+ 
+-	/*
+-	 * unshare_files() may not do anything, but we still need to account dmabufs against the
+-	 * new_dmabuf_info even if it doesn't. We need to keep track of the original files_struct
+-	 * to handle task_dma_buf_info refcounting.
+-	 */
+-	old_files = me->files;
+-
+ 	/* Ensure the files table is not shared. */
+ 	retval = unshare_files();
+ 	if (retval)
+ 		goto out;
+ 
+-	retval = dma_buf_begin_new_exec(old_files);
+-	if (retval)
+-		goto out;
+-
+ 	/*
+ 	 * Must be called _before_ exec_mmap() as bprm->mm is
+ 	 * not visible until then. Doing it here also ensures
+@@ -1330,16 +1318,6 @@ int begin_new_exec(struct linux_binprm * bprm)
+ 		goto out;
+ 
+ 	bprm->mm = NULL;
+-	/*
+-	 * New MM has just been installed. Use the task's new dmabuf_info (from
+-	 * dma_buf_begin_new_exec) for the new mm_struct.
+-	 */
+-	if (IS_ENABLED(CONFIG_DMA_SHARED_BUFFER)) {
+-		if (current->dmabuf_info)
+-			get_dmabuf_info(current->dmabuf_info);
+-		me->mm->dmabuf_info = current->dmabuf_info;
+-	}
+-
+ 	retval = exec_task_namespaces();
+ 	if (retval)
+ 		goto out_unlock;
+diff --git a/mm/huge_memory.c b/mm/huge_memory.c
+--- a/mm/huge_memory.c
++++ b/mm/huge_memory.c
+@@ -3326,7 +3326,7 @@ static void __split_huge_page(struct page *page, struct list_head *list,
+ 
+ 	if (nr_dropped)
+ 		shmem_uncharge(head->mapping->host, nr_dropped);
+-	remap_page(folio, nr, (can_split && PageAnon(head)) ? RMP_USE_SHARED_ZEROPAGE : 0);
++	remap_page(folio, nr);
+ 
+ 	for (i = 0; i < nr; i++) {
+ 		struct page *subpage = folio_dst_page(folio, i);

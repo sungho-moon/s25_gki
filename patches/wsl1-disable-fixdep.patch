@@ -1,0 +1,8 @@
+--- scripts/Kbuild.include
++++ scripts/Kbuild.include
+@@ -213,4 +213 @@
+-cmd_and_fixdep =                                                             \
+-	$(cmd);                                                              \
+-	scripts/basic/fixdep $(depfile) $@ '$(make-cmd)' > $(dot-target).cmd;\
+-	rm -f $(depfile)
++cmd_and_fixdep = $(cmd_and_savecmd)

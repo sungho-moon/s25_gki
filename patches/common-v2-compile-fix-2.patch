@@ -1,0 +1,63 @@
+diff --git a/kernel/module/main.c b/kernel/module/main.c
+--- a/kernel/module/main.c
++++ b/kernel/module/main.c
+@@ -708,7 +708,7 @@ SYSCALL_DEFINE2(delete_module, const char __user *, name_user,
+ 	struct module *mod;
+ 	char name[MODULE_NAME_LEN];
+ 	char buf[MODULE_FLAGS_BUF_SIZE];
+-	int ret, forced = 0;
++	int ret, len, forced = 0;
+ #ifdef CONFIG_RKP
+ 	struct module_info rkp_mod_info;
+ #endif
+diff --git a/arch/arm64/kvm/hyp/nvhe/ffa.c b/arch/arm64/kvm/hyp/nvhe/ffa.c
+--- a/arch/arm64/kvm/hyp/nvhe/ffa.c
++++ b/arch/arm64/kvm/hyp/nvhe/ffa.c
+@@ -437,7 +437,7 @@ static void __do_ffa_mem_xfer(const u64 func_id,
+ 	struct ffa_mem_region_attributes *ep_mem_access;
+ 	struct ffa_composite_mem_region *reg;
+ 	struct ffa_mem_region *buf;
+-	u32 offset, nr_ranges, checked_offset;
++	u32 offset, nr_ranges, checked_offset, em_mem_access_off;
+ 	int ret = 0;
+ 
+ 	if (addr_mbz || npages_mbz || fraglen > len ||
+diff --git a/fs/f2fs/f2fs.h b/fs/f2fs/f2fs.h
+--- a/fs/f2fs/f2fs.h
++++ b/fs/f2fs/f2fs.h
+@@ -1429,6 +1429,7 @@ struct f2fs_gc_control {
+ 	bool err_gc_skipped;		/* return EAGAIN if GC skipped */
+ 	bool one_time;			/* require one time GC in one migration unit */
+ 	unsigned int nr_free_secs;	/* # of free sections to do GC */
++	struct f2fs_lock_context lc;	/* lock context for gc_lock */
+ 	bool keep_pinned_secmap;
+ };
+ 
+diff --git a/fs/erofs/zdata.c b/fs/erofs/zdata.c
+--- a/fs/erofs/zdata.c
++++ b/fs/erofs/zdata.c
+@@ -154,15 +154,15 @@ static void z_erofs_onlinepage_end(struct page *page, int err, bool dirty)
+ 		v |= (orig - 1) | (!!err << Z_EROFS_ONLINEPAGE_EIO);
+ 	} while (atomic_cmpxchg((atomic_t *)&page->private, orig, v) != orig);
+ 
+-	if (!(v & ~Z_EROFS_PAGE_EIO)) {
+-		set_page_private(page, 0);
+-		ClearPagePrivate(page);
+-		if (!(v & Z_EROFS_PAGE_EIO)) {
+-			SetPageMappedToDisk(page);
+-			SetPageUptodate(page);
+-		}
+-		unlock_page(page);
+-	}
++	if (v & (BIT(Z_EROFS_ONLINEPAGE_DIRTY) - 1))
++		return;
++	set_page_private(page, 0);
++	ClearPagePrivate(page);
++	if (v & BIT(Z_EROFS_ONLINEPAGE_DIRTY))
++		flush_dcache_page(page);
++	if (!(v & BIT(Z_EROFS_ONLINEPAGE_EIO)))
++		SetPageUptodate(page);
++	unlock_page(page);
+ }
+ 
+ #define Z_EROFS_ONSTACK_PAGES		32

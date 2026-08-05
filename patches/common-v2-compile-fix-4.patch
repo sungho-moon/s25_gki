@@ -1,0 +1,91 @@
+diff --git a/fs/f2fs/checkpoint.c b/fs/f2fs/checkpoint.c
+--- a/fs/f2fs/checkpoint.c
++++ b/fs/f2fs/checkpoint.c
+@@ -1964,6 +1964,7 @@ int f2fs_issue_checkpoint(struct f2fs_sb_info *sbi)
+ 	struct ckpt_req_control *cprc = &sbi->cprc_info;
+ 	struct ckpt_req req;
+ 	struct cp_control cpc;
++	struct f2fs_lock_context lc;
+ 
+ 	cpc.reason = __get_cp_reason(sbi);
+ 	if (!test_opt(sbi, MERGE_CHECKPOINT) || cpc.reason != CP_SYNC ||
+diff --git a/fs/f2fs/gc.c b/fs/f2fs/gc.c
+--- a/fs/f2fs/gc.c
++++ b/fs/f2fs/gc.c
+@@ -1889,11 +1889,11 @@ next_step:
+ 		 */
+ 		if (type == SUM_TYPE_NODE) {
+ 			submitted += gc_node_segment(sbi, sum->entries, segno,
+-								gc_type);
++								gc_type, &plug);
+ 			sbi->sec_stat.gc_node_seg_count[gc_type]++;
+ 		} else {
+ 			submitted += gc_data_segment(sbi, sum->entries, gc_list,
+ 							segno, gc_type,
+-							force_migrate);
++							force_migrate, &plug);
+ 			sbi->sec_stat.gc_data_seg_count[gc_type]++;
+ 		}
+@@ -2414,8 +2414,8 @@ static int f2fs_resize_grow(struct f2fs_sb_info *sbi, unsigned int secs)
+ 
+ 	err = free_segment_range(sbi, secs, true);
+ 
+ out_unlock:
+-	f2fs_unlock_op(sbi);
++	f2fs_unlock_op(sbi, &lc);
+ 	if (err) {
+ 		clear_sbi_flag(sbi, SBI_IS_RESIZEFS);
+ 		f2fs_up_write(&sbi->gc_lock);
+diff --git a/fs/f2fs/data.c b/fs/f2fs/data.c
+--- a/fs/f2fs/data.c
++++ b/fs/f2fs/data.c
+@@ -33,3 +33,4 @@
+ #include <trace/events/f2fs.h>
+ #include <trace/hooks/blk.h>
++#include <trace/hooks/fs.h>
+ #include <asm/div64.h>
+diff --git a/mm/mmap.c b/mm/mmap.c
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -42,6 +42,8 @@
+ #include <linux/oom.h>
+ #include <linux/sched/mm.h>
+ #include <linux/ksm.h>
++#include <linux/memfd.h>
++#include <linux/wrapfd.h>
+ #include <linux/dma-buf.h>
+ 
+ #include <linux/uaccess.h>
+@@ -3528,7 +3530,7 @@ struct vm_area_struct *copy_vma(struct vm_area_struct **vmap,
+ 			get_file(new_vma->vm_file);
+ 			if (is_dma_buf_file(new_vma->vm_file)) {
+ 				acct_err = dma_buf_account_task(new_vma->vm_file->private_data,
+-								new_vma->vm_mm->dmabuf_info);
++								current);
+ 
+ 				if (acct_err)
+ 					pr_err("failed to account dmabuf, err %d\n", acct_err);
+@@ -3548,6 +3550,6 @@ out_vma_link:
+ 	if (new_vma->vm_file) {
+ 		if (is_dma_buf_file(new_vma->vm_file) && !acct_err)
+ 			dma_buf_unaccount_task(new_vma->vm_file->private_data,
+-					       new_vma->vm_mm->dmabuf_info);
++					       current);
+ 		fput(new_vma->vm_file);
+ 	}
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1521,7 +1521,11 @@ struct task_struct {
+ 
+ 	ANDROID_KABI_USE(1, struct task_dma_buf_info *dmabuf_info);
+ 
+-	ANDROID_KABI_RESERVE(2);
++	ANDROID_KABI_USE(2, struct {
++		/* Save user-dumpable when mm goes away */
++		unsigned user_dumpable:1;
++		});
++
+ 	ANDROID_KABI_RESERVE(3);
+ 	ANDROID_KABI_RESERVE(4);
+ 	ANDROID_KABI_RESERVE(5);

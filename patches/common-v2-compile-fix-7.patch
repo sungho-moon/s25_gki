@@ -1,0 +1,30 @@
+diff --git a/include/linux/device.h b/include/linux/device.h
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -721,10 +721,6 @@ struct device {
+ 					   core doesn't touch it */
+ 	void		*driver_data;	/* Driver data, set and get with
+ 					   dev_set_drvdata/dev_get_drvdata */
+-	struct {
+-		const char	*name;
+-		spinlock_t	lock;
+-	} driver_override;
+ 	struct mutex		mutex;	/* mutex to synchronize calls to
+ 					 * its driver.
+ 					 */
+@@ -809,8 +805,15 @@ struct device {
+ #ifdef CONFIG_DMA_OPS_BYPASS
+ 	bool			dma_ops_bypass : 1;
+ #endif
++#ifdef __GENKSYMS__
+ 	ANDROID_KABI_RESERVE(1);
+ 	ANDROID_KABI_RESERVE(2);
++#else
++	struct {
++		const char	*name;
++		spinlock_t	lock;
++	} driver_override;
++#endif
+ 	ANDROID_KABI_RESERVE(3);
+ 	ANDROID_KABI_RESERVE(4);
+ 	ANDROID_KABI_RESERVE(5);

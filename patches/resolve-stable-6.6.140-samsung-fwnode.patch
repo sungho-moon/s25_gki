@@ -1,0 +1,6 @@
+diff --git a/include/linux/fwnode.h b/include/linux/fwnode.h
+--- a/include/linux/fwnode.h
++++ b/include/linux/fwnode.h
+@@ -49 +49 @@ struct fwnode_handle {
+-	u8 flags;
++	unsigned long flags;

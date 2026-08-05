@@ -1,0 +1,56 @@
+diff --git a/fs/namespace.c b/fs/namespace.c
+--- a/fs/namespace.c
++++ b/fs/namespace.c
+@@ -32,12 +32,22 @@
+ #include <linux/fs_context.h>
+ #include <linux/shmem_fs.h>
+ #include <linux/mnt_idmapping.h>
++#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
++#include <linux/susfs_def.h>
++#endif
+ 
+ #include "pnode.h"
+ #include "internal.h"
+ #include <trace/hooks/blk.h>
+ #include <trace/hooks/fs.h>
+ 
++#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
++extern bool susfs_is_current_ksu_domain(void);
++extern struct static_key_true susfs_is_sdcard_android_data_not_decrypted;
++
++#define CL_COPY_MNT_NS BIT(25)
++#endif
++
+ #ifdef CONFIG_PROC_STLOG
+ #include <linux/fslog.h>
+ #endif
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -101,6 +101,9 @@
+ #include <linux/cpufreq_times.h>
+ #include <linux/dma-buf.h>
+ #include <linux/task_integrity.h>
++#if defined(CONFIG_KSU_SUSFS_SUS_MAP) || defined(CONFIG_KSU_SUSFS_OPEN_REDIRECT)
++#include <linux/susfs_def.h>
++#endif
+ #include <linux/proca.h>
+ #include <trace/events/oom.h>
+ #include <trace/hooks/sched.h>
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -1078,6 +1078,13 @@ static int show_smap(struct seq_file *m, void *v)
+ 	struct vm_area_struct *vma = v;
+ 	struct mem_size_stats mss;
+ 
++#ifdef CONFIG_KSU_SUSFS_SUS_MAP
++	if (vma->vm_file) {
++		if (SUSFS_IS_INODE_SUS_MAP(file_inode(vma->vm_file)))
++			return 0;
++	}
++#endif
++
+ 	memset(&mss, 0, sizeof(mss));
+ 
+ 	if (!vma_data_pages(vma))

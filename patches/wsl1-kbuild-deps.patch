@@ -1,0 +1,24 @@
+--- scripts/Kbuild.include
++++ scripts/Kbuild.include
+@@ -211 +211 @@
+-if_changed_dep = $(if $(if-changed-cond),$(cmd_and_fixdep),@:)
++if_changed_dep = $(if $(if-changed-cond),$(cmd_and_savecmd),@:)
+--- scripts/Makefile.host
++++ scripts/Makefile.host
+@@ -83 +83 @@
+-hostc_flags    = -Wp,-MMD,$(depfile) \
++hostc_flags    = \
+@@ -86 +86 @@
+-hostcxx_flags  = -Wp,-MMD,$(depfile) \
++hostcxx_flags  = \
+--- scripts/Makefile.lib
++++ scripts/Makefile.lib
+@@ -240 +240 @@
+-c_flags        = -Wp,-MMD,$(depfile) $(NOSTDINC_FLAGS) $(LINUXINCLUDE)     \
++c_flags        = $(NOSTDINC_FLAGS) $(LINUXINCLUDE)     \
+@@ -247 +247 @@
+-a_flags        = -Wp,-MMD,$(depfile) $(NOSTDINC_FLAGS) $(LINUXINCLUDE)     \
++a_flags        = $(NOSTDINC_FLAGS) $(LINUXINCLUDE)     \
+@@ -250 +250 @@
+-cpp_flags      = -Wp,-MMD,$(depfile) $(NOSTDINC_FLAGS) $(LINUXINCLUDE)     \
++cpp_flags      = $(NOSTDINC_FLAGS) $(LINUXINCLUDE)     \
