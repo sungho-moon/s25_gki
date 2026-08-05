@@ -82,24 +82,20 @@ AK3 的设备检查已按发布需求移除，因此安装器不会阻止其他�
 ## 刷入要求
 
 - 已解锁 Bootloader
-- 能够刷入 AnyKernel3 ZIP 的 Recovery 或内核刷写工具
-- 与当前槽位和固件对应的原厂 `boot.img` 备份
-- 已关闭会阻止自定义 boot 启动的验证机制
+- 能够刷入 AnyKernel3 ZIP 的 内核刷写工具(如Kernel Flasher) 或Twrp
+- 必须备份原厂 `boot.img` ！！！
 
 刷入前请确认自己能够进入 Download Mode，并能够通过 Odin 或其他可靠
 方式恢复原厂 `boot.img`。
 
 ## 刷入方法
 
-1. 备份当前活动槽位的原厂 `boot` 分区。
-2. 下载所需版本，并校验 SHA-256。
-3. 使用支持 AnyKernel3 的工具刷入 ZIP。
+1. 备份当前活动槽位的原厂 `boot` 分区。或通过官方固件包提取
+2. 下载所需版本。
+3. 使用支持 AnyKernel3 的工具（如Kernel Flasher）刷入 ZIP。
 4. 重启设备并检查内核版本、触摸、网络、相机、音频与充电功能。
-5. 如果卡第一屏、循环重启或 vendor 模块加载失败，立即恢复原厂
+5. 如果卡第一屏、循环重启，立即通过Odin恢复原厂
    `boot.img`。
-
-不要同时刷入两个版本。从内置版切换至 LKM Ready 版时，建议先恢复同一
-固件的原厂 boot，再刷入目标包。
 
 ## LKM 使用说明
 
@@ -116,13 +112,6 @@ LKM Ready 版没有内置 KernelSU。自行使用 KernelSU LKM 时，模块必�
 检查 `vermagic` 和符号版本；不匹配时重新针对本项目源码、配置和符号表
 编译模块。
 
-## 文件校验
-
-```text
-3965aee362d55b106f9074df8a259362a963fad4ce70afa781520c6fb984dc27  S25U-GKI-6.6.142-ReSukiSU-SUSFS-GENERIC-AK3.zip
-cec342f7dadc8f0729eb41d2367b43a75dd0c80f7322047461f2b4c95e9c316a  S25U-GKI-6.6.142-LKM-READY-GENERIC-AK3.zip
-```
-
 ## 源码与版本
 
 - 三星 SM8750 基线：
@@ -132,9 +121,6 @@ cec342f7dadc8f0729eb41d2367b43a75dd0c80f7322047461f2b4c95e9c316a  S25U-GKI-6.6.1
 - 6.6.142 合并基点：`c32f768993aa0228bb64f5a34d537a025e6a2c28`
 - ReSukiSU commit：`88dbc78682a3364d27ad34551943e18615abf868`
 - SUSFS commit：`be7b7ef49a1e1b189c3abf00eacaa7ebdb4168c1`
-
-发布二进制内核时，应同时发布与二进制准确对应的完整源码、配置、补丁和
-构建说明。只链接上游仓库不能替代对应源码。
 
 ## 免责声明
 
