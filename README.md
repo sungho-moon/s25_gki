@@ -29,50 +29,11 @@ AK3刷机包请前往 [Releases](../../releases)。当前提供两个版本：
 - 保留三星 vendor 模块所需 KMI
 - 保留 BTF、`CONFIG_MODVERSIONS` 与动态模块支持
 
-LKM Ready 版额外配置：
-
-```text
-CONFIG_KSU=n
-CONFIG_MODULES=y
-CONFIG_MODULE_UNLOAD=y
-CONFIG_MODVERSIONS=y
-CONFIG_MODULE_SIG_PROTECT=n
-CONFIG_MODULE_SIG_FORCE=n
-CONFIG_DEBUG_INFO_BTF=y
-```
-
-包内提供 `Image.config`；LKM Ready 版还提供 `Image.symvers`，方便核对或
-编译与当前内核匹配的模块。
-
-## 兼容性验证
-
-使用当前 `SM-S938B` 原厂内核和 vendor 模块进行离线审计：
-
-```text
-vendor 模块依赖的三星内核符号：3030
-CRC 匹配：3030
-CRC 不匹配：0
-缺失：0
-```
-
-LKM Ready 版 BTF 对比结果：
-
-```text
-共同命名结构/联合体：11174
-布局差异：75
-其中大小差异：46
-同大小布局差异：29
-```
-
-`3030/3030` 只表示本次提取到的 S25 Ultra vendor 模块所依赖的内核符号
-全部匹配，不代表所有导出符号、BTF 布局或其他 S25 固件完全相同。审计中
-仍有 119 个共同导出符号的 CRC 与原厂不同，但当前提取的 vendor 模块没有
-依赖这些符号。
-
 ## 已测试设备
 
-- `SM-S938B`
+- `SM-S938B/三星S25Ultra`
 - 设备代号：`pa3q`
+- 系统版本：`OneUI 8.5`
 
 AK3 的设备检查已按发布需求移除，因此安装器不会阻止其他型号刷入。这只
 是取消安装器限制，不是兼容性保证。S25、S25+ 或其他地区/固件版本可能
