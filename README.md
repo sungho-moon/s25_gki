@@ -31,7 +31,7 @@ AK3刷机包请前往 [Releases](../../releases)。当前提供两个版本：
 
 ## 已测试设备
 
-- `SM-S938B/三星S25Ultra`
+- `SM-S938B/三星S25 Ultra`
 - 设备代号：`pa3q`
 - 系统版本：`OneUI 8.5`
 
