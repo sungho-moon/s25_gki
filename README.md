@@ -34,7 +34,7 @@ AK3 的设备检查已按发布需求移除，因此安装器不会阻止其他�
 - 能够刷入 AnyKernel3 ZIP 的 内核刷写工具(如Kernel Flasher) 或Twrp
 - 必须备份原厂 `boot.img` ！！！
 
-刷入前请确认自己能够进入 Download Mode，并能够通过 Odin 或其他可靠
+刷入前请确认自己能够进入 Download Mode，并能够通过 Odin或其他可靠
 方式恢复原厂 `boot.img`。
 
 ## 下载
