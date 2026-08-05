@@ -11,8 +11,8 @@ KMI。它不是直接刷入的纯 Google GKI，也不是适用于所有 6.6 设�
 
 刷机包请前往 [Releases](../../releases)。当前提供两个版本：
 
-| 文件 | 说明 | 实机状态 |
-| --- | --- | --- |
+| 文件 | 说明 |
+| --- | --- |
 | `S25U-GKI-6.6.142-ReSukiSU-SUSFS-GENERIC-AK3.zip` | 内置 ReSukiSU 与 SUSFS，不含 KPM |
 | `S25U-GKI-6.6.142-LKM-READY-GENERIC-AK3.zip` | 不内置 KSU/ReSukiSU/SUSFS，供用户自行加载 LKM |
 
