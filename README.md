@@ -13,8 +13,8 @@ KMI。它不是直接刷入的纯 Google GKI，也不是适用于所有 6.6 设�
 
 | 文件 | 说明 | 实机状态 |
 | --- | --- | --- |
-| `S25U-GKI-6.6.142-ReSukiSU-SUSFS-GENERIC-AK3.zip` | 内置 ReSukiSU 与 SUSFS，不含 KPM | 已在 `SM-S938B/pa3q` 开机验证 |
-| `S25U-GKI-6.6.142-LKM-READY-GENERIC-AK3.zip` | 不内置 KSU/ReSukiSU/SUSFS，供用户自行加载 LKM | 尚未实机验证 |
+| `S25U-GKI-6.6.142-ReSukiSU-SUSFS-GENERIC-AK3.zip` | 内置 ReSukiSU 与 SUSFS，不含 KPM |
+| `S25U-GKI-6.6.142-LKM-READY-GENERIC-AK3.zip` | 不内置 KSU/ReSukiSU/SUSFS，供用户自行加载 LKM |
 
 第二个版本仍然是 GKI 内核。“LKM Ready”表示它没有内置 KernelSU，并且
 移除了三星额外的 LKM 签名保护限制，不表示它是不带 GKI 的传统内核。
