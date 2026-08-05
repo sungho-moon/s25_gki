@@ -30,6 +30,7 @@ AK3 的设备检查已按发布需求移除，因此安装器不会阻止其他�
 ## 刷入要求
 
 - 已解锁 Bootloader
+- 系统版本为OneUI 8.5
 - 能够刷入 AnyKernel3 ZIP 的 内核刷写工具(如Kernel Flasher) 或Twrp
 - 必须备份原厂 `boot.img` ！！！
 
