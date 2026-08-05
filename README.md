@@ -96,31 +96,6 @@ AK3 的设备检查已按发布需求移除，因此安装器不会阻止其他�
 5. 如果卡第一屏、循环重启，立即通过Odin恢复原厂
    `boot.img`。
 
-## LKM 使用说明
-
-LKM Ready 版没有内置 KernelSU。自行使用 KernelSU LKM 时，模块必须与
-以下项目匹配：
-
-- 完整 kernel release：
-  `6.6.142-pe17667d-abogkiS938BXXU9CZDP-4k`
-- ARM64、4 KiB page size
-- `CONFIG_MODVERSIONS` 和 `Image.symvers` 中的 CRC
-- 当前设备 vendor 模块及固件 KMI
-
-仅仅看到内核主版本同为 `6.6.142` 并不足以保证 `.ko` 能加载。加载前应
-检查 `vermagic` 和符号版本；不匹配时重新针对本项目源码、配置和符号表
-编译模块。
-
-## 源码与版本
-
-- 三星 SM8750 基线：
-  [`fei-ke/android_kernel_samsung_sm8750`](https://github.com/fei-ke/android_kernel_samsung_sm8750)
-- 基线分支：`gki`
-- 基线 commit：`7ddb142e90e2b202b3aa7bb5996fe99c4bc6ecfc`
-- 6.6.142 合并基点：`c32f768993aa0228bb64f5a34d537a025e6a2c28`
-- ReSukiSU commit：`88dbc78682a3364d27ad34551943e18615abf868`
-- SUSFS commit：`be7b7ef49a1e1b189c3abf00eacaa7ebdb4168c1`
-
 ## 免责声明
 
 刷写自定义内核可能导致无法开机、数据丢失、保修或安全功能失效。作者和
