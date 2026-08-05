@@ -7,18 +7,6 @@ Android Common/Linux Stable 至 6.6.142，并保留三星 vendor 模块所需的
 KMI。它不是直接刷入的纯 Google GKI，也不是适用于所有 6.6 设备的通用
 内核。
 
-## 下载
-
-AK3刷机包请前往 [Releases](../../releases)。当前提供两个版本：
-
-| 文件 | 说明 |
-| --- | --- |
-| `S25U-GKI-6.6.142-ReSukiSU-SUSFS-GENERIC-AK3.zip` | 内置 ReSukiSU 与 SUSFS，不含 KPM |
-| `S25U-GKI-6.6.142-LKM-READY-GENERIC-AK3.zip` | 不内置 KSU/ReSukiSU/SUSFS，供用户自行加载 LKM |
-
-第二个版本仍然是 GKI 内核。“LKM Ready”表示它没有内置 KernelSU，并且
-移除了三星额外的 LKM 签名保护限制，不表示它是不带 GKI 的传统内核。
-
 ## 主要特性
 
 - 内核版本：`6.6.142`
@@ -47,6 +35,19 @@ AK3 的设备检查已按发布需求移除，因此安装器不会阻止其他�
 
 刷入前请确认自己能够进入 Download Mode，并能够通过 Odin 或其他可靠
 方式恢复原厂 `boot.img`。
+
+## 下载
+
+AK3刷机包请前往 [Releases](../../releases)。当前提供两个版本：
+
+| 文件 | 说明 |
+| --- | --- |
+| `S25U-GKI-6.6.142-ReSukiSU-SUSFS-GENERIC-AK3.zip` | 内置 ReSukiSU 与 SUSFS，不含 KPM |
+| `S25U-GKI-6.6.142-LKM-READY-GENERIC-AK3.zip` | 不内置 KSU/ReSukiSU/SUSFS，供用户自行加载 LKM |
+
+第二个版本仍然是 GKI 内核。“LKM Ready”表示它没有内置 KernelSU，并且
+移除了三星额外的 LKM 签名保护限制，不表示它是不带 GKI 的传统内核。
+
 
 ## 刷入方法
 
