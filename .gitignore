@@ -1,0 +1,17 @@
+/out/
+*.o
+*.a
+*.ko
+*.cmd
+*.dtb
+*.dtbo
+*.img
+*.zip
+*.tar
+*.tar.gz
+*.tar.xz
+vmlinux
+System.map
+Module.symvers
+certs/signing_key.pem
+certs/signing_key.x509
