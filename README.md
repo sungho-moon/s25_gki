@@ -13,8 +13,8 @@ KMI。它不是直接刷入的纯 Google GKI，也不是适用于所有 6.6 设�
 
 | 文件 | 说明 | 实机状态 |
 | --- | --- | --- |
-| `S25U-GKI-6.6.142-r2-ReSukiSU-SUSFS-USB-C-HOTFIX-AK3.zip` | 内置 ReSukiSU 与 SUSFS，不含 KPM，含 USB-C/xHCI 拔出修复 | `SM-S938B/pa3q` 已验证硬盘和有线耳机插拔 |
-| `S25U-GKI-6.6.142-r2-LKM-READY-USB-C-HOTFIX-AK3.zip` | 不内置 KSU/ReSukiSU/SUSFS，供用户自行加载 LKM，含同一修复 | `SM-S938B/pa3q` 已验证硬盘和有线耳机插拔 |
+| `S25U-GKI-6.6.142-r2-ReSukiSU-SUSFS-USB-C-HOTFIX-AK3.zip` | 内置 ReSukiSU 与 SUSFS，不含 KPM，含 USB-C/xHCI 拔出修复 | `SM-S938B/pa3q` 已验证 |
+| `S25U-GKI-6.6.142-r2-LKM-READY-USB-C-HOTFIX-AK3.zip` | 不内置 KSU/ReSukiSU/SUSFS，供用户自行加载 LKM，含同一修复 | `SM-S938B/pa3q` 已验证 |
 
 r2 修复了 USB-C 设备拔出时 xHCI 销毁流程中的空指针访问（`xhci_free_virt_device`），该问题会导致系统卡死后重启。当前已刷入的 ReSukiSU r2 已完成移动硬盘和有线耳机的插入、识别、拔出验证。
 
