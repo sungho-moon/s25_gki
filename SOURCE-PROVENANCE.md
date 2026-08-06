@@ -29,3 +29,7 @@ Kernel release:
 
 The Samsung stock boot image and proprietary vendor modules are not included.
 They were used only for local compatibility auditing.
+
+For the r2 USB-C hotfix, apply `patches/usb-c-xhci-free-virt-device-fix.patch`
+to the source snapshot before rebuilding. The same patch is included as a
+separate Release asset for users who download the prepared source tarball.

@@ -1,0 +1,28 @@
+diff --git a/drivers/usb/host/xhci-mem.c b/drivers/usb/host/xhci-mem.c
+--- a/drivers/usb/host/xhci-mem.c
++++ b/drivers/usb/host/xhci-mem.c
+@@ -880,19 +880,11 @@ void xhci_free_virt_device(struct xhci_hcd *xhci, struct xhci_virt_device *dev,
+ 	if (slot_id == 0 || !dev)
+ 		return;
+ 
+-	dev = xhci->devs[slot_id];
+-
+-	/* Prevent double-free race condition */
+-	if (test_and_set_bit(1, &dev->flags)) {
+-		xhci_warn(xhci, "Device slot %d already being freed\n", slot_id);
+-		return;
+-	}
+-
+-	/* Now safe to proceed with freeing */
+-
+-	xhci->dcbaa->dev_context_ptrs[slot_id] = 0;
+-	if (!dev)
+-		return;
++	/* Clear the slot only if it still points to this device context. */
++	if (dev->out_ctx &&
++	    xhci->dcbaa->dev_context_ptrs[slot_id] ==
++			cpu_to_le64(dev->out_ctx->dma))
++		xhci->dcbaa->dev_context_ptrs[slot_id] = 0;
+ 
+ 	trace_xhci_free_virt_device(dev);
+ 

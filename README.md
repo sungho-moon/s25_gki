@@ -1,4 +1,4 @@
-# Samsung Galaxy S25 GKI 6.6.142
+# Samsung Galaxy S25 GKI 6.6.142 r2
 
 面向三星 Galaxy S25 系列的 Linux 6.6.142 GKI 内核实验构建。
 
@@ -9,12 +9,14 @@ KMI。它不是直接刷入的纯 Google GKI，也不是适用于所有 6.6 设�
 
 ## 下载
 
-刷机包请前往 [Releases](../../releases)。当前提供两个版本：
+刷机包请前往 [Releases](../../releases)。当前提供两个 r2 USB-C 热修复版本；r1 包仍保留在 Releases 中，但不建议继续使用：
 
 | 文件 | 说明 | 实机状态 |
 | --- | --- | --- |
-| `S25U-GKI-6.6.142-ReSukiSU-SUSFS-GENERIC-AK3.zip` | 内置 ReSukiSU 与 SUSFS，不含 KPM | 已在 `SM-S938B/pa3q` 开机验证 |
-| `S25U-GKI-6.6.142-LKM-READY-GENERIC-AK3.zip` | 不内置 KSU/ReSukiSU/SUSFS，供用户自行加载 LKM | 尚未实机验证 |
+| `S25U-GKI-6.6.142-r2-ReSukiSU-SUSFS-USB-C-HOTFIX-AK3.zip` | 内置 ReSukiSU 与 SUSFS，不含 KPM，含 USB-C/xHCI 拔出修复 | `SM-S938B/pa3q` 已验证硬盘和有线耳机插拔 |
+| `S25U-GKI-6.6.142-r2-LKM-READY-USB-C-HOTFIX-AK3.zip` | 不内置 KSU/ReSukiSU/SUSFS，供用户自行加载 LKM，含同一修复 | `SM-S938B/pa3q` 已验证硬盘和有线耳机插拔 |
+
+r2 修复了 USB-C 设备拔出时 xHCI 销毁流程中的空指针访问（`xhci_free_virt_device`），该问题会导致系统卡死后重启。当前已刷入的 ReSukiSU r2 已完成移动硬盘和有线耳机的插入、识别、拔出验证。
 
 第二个版本仍然是 GKI 内核。“LKM Ready”表示它没有内置 KernelSU，并且
 移除了三星额外的 LKM 签名保护限制，不表示它是不带 GKI 的传统内核。
@@ -73,7 +75,6 @@ LKM Ready 版 BTF 对比结果：
 
 - `SM-S938B`
 - 设备代号：`pa3q`
-- ReSukiSU + SUSFS 版已成功开机
 
 AK3 的设备检查已按发布需求移除，因此安装器不会阻止其他型号刷入。这只
 是取消安装器限制，不是兼容性保证。S25、S25+ 或其他地区/固件版本可能
@@ -119,8 +120,9 @@ LKM Ready 版没有内置 KernelSU。自行使用 KernelSU LKM 时，模块必�
 ## 文件校验
 
 ```text
-3965aee362d55b106f9074df8a259362a963fad4ce70afa781520c6fb984dc27  S25U-GKI-6.6.142-ReSukiSU-SUSFS-GENERIC-AK3.zip
-cec342f7dadc8f0729eb41d2367b43a75dd0c80f7322047461f2b4c95e9c316a  S25U-GKI-6.6.142-LKM-READY-GENERIC-AK3.zip
+a9634a8ea4761483d9e11ead4e7d0edd56c3c8723e10ccc6adece8487996347a  S25U-GKI-6.6.142-r2-ReSukiSU-SUSFS-USB-C-HOTFIX-AK3.zip
+2d2e525d079fc428e9e2e3dd17439ad17eee3ff53a43c8a5a9d39a76f0ea65d2  S25U-GKI-6.6.142-r2-LKM-READY-USB-C-HOTFIX-AK3.zip
+7c68ecedb2763643776e53390477825f442acad228624e0b0be3e161214d3bfa  usb-c-xhci-free-virt-device-fix.patch
 4393f4e8650c46533acb986a4baa728c643da1900e345fb9b877f960867a8614  s25-gki-6.6.142-r1-source.tar.gz
 ```
 
@@ -133,6 +135,10 @@ cec342f7dadc8f0729eb41d2367b43a75dd0c80f7322047461f2b4c95e9c316a  S25U-GKI-6.6.1
 - 6.6.142 合并基点：`c32f768993aa0228bb64f5a34d537a025e6a2c28`
 - ReSukiSU commit：`88dbc78682a3364d27ad34551943e18615abf868`
 - SUSFS commit：`be7b7ef49a1e1b189c3abf00eacaa7ebdb4168c1`
+
+发行附件中的 `s25-gki-6.6.142-r1-source.tar.gz` 是 r2 前的完整源快照；将
+`usb-c-xhci-free-virt-device-fix.patch` 应用到该快照后，得到 r2 的 USB-C/xHCI
+修复源码。该补丁同时收录在仓库的 `patches/` 目录。
 
 发布二进制内核时，应同时发布与二进制准确对应的完整源码、配置、补丁和
 构建说明。只链接上游仓库不能替代对应源码。
