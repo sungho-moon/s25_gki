@@ -8,7 +8,7 @@ KMI。它不是直接刷入的纯 Google GKI，也不是适用于所有 6.6 设�
 
 ## 下载
 
-刷机包请前往 [Releases](../../releases)。当前 r21 只发布 boot-only 内置版：
+刷机包请前往 [Releases](../../releases)。当前 r21 只发布 Resukisu 内置版：
 
 | 文件 | 说明 | 状态 |
 | --- | --- | --- |
