@@ -1,35 +1,22 @@
 # Source Provenance
 
-This release uses the Samsung SM8750 GKI source as the device compatibility
-base and merges Android Common/Linux Stable through Linux 6.6.142.
+This desktop source tree is the Samsung S25 GKI compatibility tree merged with
+Android Common/Linux Stable through Linux 6.6.152.
 
-- Samsung source: https://github.com/fei-ke/android_kernel_samsung_sm8750
-- Samsung branch: `gki`
-- Samsung source commit: `7ddb142e90e2b202b3aa7bb5996fe99c4bc6ecfc`
-- Local 6.6.142 merge base: `c32f768993aa0228bb64f5a34d537a025e6a2c28`
-- ReSukiSU source: https://github.com/rsuntk/KernelSU
-- ReSukiSU commit: `88dbc78682a3364d27ad34551943e18615abf868`
-- SUSFS source: https://gitlab.com/simonpunk/susfs4ksu
-- SUSFS commit: `be7b7ef49a1e1b189c3abf00eacaa7ebdb4168c1`
+- Samsung compatibility base: SM8750/S25 vendor GKI source
+- ReSukiSU source: https://github.com/ReSukiSU/ReSukiSU
+- ReSukiSU CI tag: `v35089`
+- ReSukiSU commit: `b2ac2fc8703ce9f5226e2a38a59f8b72f8a3005c`
+- ReSukiSU source count: `4389`
+- SUSFS: `v2.2.0`
+- Kernel release: `6.6.152-pe17667d-abogkiS938BXXU9CZDP-4k`
 
-The release source archive is a snapshot of the exact modified working tree
-used for the final builds. It includes the changes after the merge-base commit,
-including ReSukiSU, SUSFS, Samsung KMI fixes, build compatibility fixes, and
-both release defconfigs. Git metadata and build output directories are omitted.
+`drivers/kernelsu` is expanded into a real source directory. Its Kbuild file
+contains an explicit v35089 fallback identity for source copies without the
+ReSukiSU parent Git metadata, so a standalone desktop build does not revert to
+the old 30700/source-copy identity.
 
-`drivers/kernelsu` was a local integration symlink during development. In the
-published source archive it is expanded into a real directory so that the
-archive is self-contained.
+The source tree contains the suspend deep-selection workaround and the retained
+USB-C/DWC3 changes. It does not contain proprietary Samsung vendor modules,
+`vendor_dlkm.img`, or a vendor_dlkm packaging step.
 
-Kernel release:
-
-```text
-6.6.142-pe17667d-abogkiS938BXXU9CZDP-4k
-```
-
-The Samsung stock boot image and proprietary vendor modules are not included.
-They were used only for local compatibility auditing.
-
-For the r2 USB-C hotfix, apply `patches/usb-c-xhci-free-virt-device-fix.patch`
-to the source snapshot before rebuilding. The same patch is included as a
-separate Release asset for users who download the prepared source tarball.

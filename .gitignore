@@ -15,3 +15,8 @@ System.map
 Module.symvers
 certs/signing_key.pem
 certs/signing_key.x509
+*.apk
+*.log
+build-r*/
+release-r*/
+out-r*/

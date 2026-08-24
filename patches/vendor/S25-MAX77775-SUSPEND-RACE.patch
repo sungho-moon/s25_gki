@@ -1,0 +1,247 @@
+From: Codex
+Subject: [PATCH] usb: typec: max77775: close suspend IRQ/workqueue race
+
+The S25 freeze is reproducible only after USB-C is offline and the phone
+enters suspend. The Type-C child can still queue an opcode, PDIC notifier,
+or MUIC operation while the MAX77775 MFD parent is synchronizing its IRQ.
+Gate the child first, drain asynchronous work, and make all bus/IRQ paths
+observe the same gate. This does not change GKI suspend policy.
+
+--- a/include/linux/mfd/max77775-private.h
++++ b/include/linux/mfd/max77775-private.h
+@@ -377,6 +377,12 @@
+ 
+ 	bool shutdown;
+ 	bool suspended;
++	/*
++	 * Set by the USB-C child before system PM reaches the MFD parent.
++	 * This closes the child/parent PM ordering window where a detach IRQ
++	 * or opcode worker could touch MAX77775 while the bus was suspending.
++	 */
++	bool suspend_gate;
+ 	wait_queue_head_t suspend_wait;
+ 
+ 	void (*check_pdmsg)(void *data, u8 pdmsg);
+@@ -385,6 +391,13 @@
+ 	struct max77775_platform_data *pdata;
+ };
+ 
++static inline bool max77775_is_suspend_blocked(
++		const struct max77775_dev *max77775)
++{
++	return READ_ONCE(max77775->suspend_gate) ||
++		READ_ONCE(max77775->suspended);
++}
++
+ enum max77775_types {
+ 	TYPE_MAX77775,
+ };
+
+--- a/drivers/mfd/maxim/max77775.c
++++ b/drivers/mfd/maxim/max77775.c
+@@ -2011,9 +2011,11 @@
+ 
+ 	md75_info_usb("%s:%s\n", MFD_DEV_NAME, __func__);
+ 
++	/* Block child work and new IRQ processing before synchronizing the line. */
++	WRITE_ONCE(max77775->suspend_gate, true);
+ 	synchronize_irq(max77775->irq);
+ 
+-	max77775->suspended = true;
++	WRITE_ONCE(max77775->suspended, true);
+ 
+ 	return 0;
+ }
+@@ -2025,7 +2027,8 @@
+ 
+ 	md75_info_usb("%s:%s\n", MFD_DEV_NAME, __func__);
+ 
+-	max77775->suspended = false;
++	WRITE_ONCE(max77775->suspended, false);
++	WRITE_ONCE(max77775->suspend_gate, false);
+ 	wake_up_interruptible(&max77775->suspend_wait);
+ 
+ 	return 0;
+
+--- a/drivers/mfd/maxim/max77775-irq.c
++++ b/drivers/mfd/maxim/max77775-irq.c
+@@ -219,12 +219,12 @@
+ 
+ 	__pm_stay_awake(&max77775->ws);
+ 
+-	if (max77775->suspended) {
++	if (max77775_is_suspend_blocked(max77775)) {
+ 		md75_err_usb("%s:%s skip.max77775 suspended. irq gpio post-state(0x%02x)\n",
+ 			MFD_DEV_NAME, __func__, gpio_get_value(max77775->irq_gpio));
+ 		/* Irq will occur again because of IRQF_TRIGGER_LOW */
+ 		wait_event_interruptible_timeout(max77775->suspend_wait,
+-						!max77775->suspended,
++						!max77775_is_suspend_blocked(max77775),
+ 						msecs_to_jiffies(50));
+ 		__pm_relax(&max77775->ws);
+ 		return IRQ_NONE;
+
+--- a/drivers/usb/typec/maxim/max77775_usbc.c
++++ b/drivers/usb/typec/maxim/max77775_usbc.c
+@@ -1199,5 +1199,6 @@
+ 		switch (rmdr) {
+ 		case HMD_POWER_MON:
+-			strlcpy(hmd_list[j].hmd_name, tok, NAME_LEN_HMD);
++			/* strlcpy is not exported by the S25 GKI KMI. */
++			strscpy(hmd_list[j].hmd_name, tok, NAME_LEN_HMD);
+ 			break;
+
+@@ -2371,6 +2371,11 @@
+ 	usbc_cmd_data cmd_data;
+ 	int ret = 0;
+ 
++	if (max77775_is_suspend_blocked(usbc_data->max77775)) {
++		msg_maxim("MAX77775 suspend gate: skip opcode command");
++		return;
++	}
++
+ 	cmd_queue = &(usbc_data->usbc_cmd_queue);
+ 
+ 	init_usbc_cmd_data(&cmd_data);
+@@ -2417,7 +2422,7 @@
+ 	if (usbc_data->usb_mock.opcode_write)
+ 		return usbc_data->usb_mock.opcode_write((void *)usbc_data, write_op);
+ 
+-	if (max77775->suspended == true) {
++	if (max77775_is_suspend_blocked(max77775)) {
+ 		msg_maxim("max77775 in suspend state, just return");
+ 		return -EACCES;
+ 	}
+@@ -2483,7 +2488,7 @@
+ 	if (usbc_data->usb_mock.opcode_read)
+ 		return usbc_data->usb_mock.opcode_read((void *)usbc_data, read_op);
+ 
+-	if (max77775->suspended == true) {
++	if (max77775_is_suspend_blocked(max77775)) {
+ 		msg_maxim("max77775 in suspend state, just return");
+ 		return -EACCES;
+ 	}
+@@ -2549,7 +2554,7 @@
+ 	if (usbc_data->usb_mock.opcode_update)
+ 		return usbc_data->usb_mock.opcode_update((void *)usbc_data, update_op);
+ 
+-	if (max77775->suspended == true) {
++	if (max77775_is_suspend_blocked(max77775)) {
+ 		msg_maxim("max77775 in suspend state, just return");
+ 		return -EACCES;
+ 	}
+@@ -2631,7 +2636,7 @@
+ 	if (usbc_data->usb_mock.opcode_push)
+ 		return usbc_data->usb_mock.opcode_push((void *)usbc_data, read_op);
+ 
+-	if (max77775->suspended == true) {
++	if (max77775_is_suspend_blocked(max77775)) {
+ 		msg_maxim("max77775 in suspend state, just return");
+ 		return -EACCES;
+ 	}
+@@ -2673,7 +2678,7 @@
+ 	if (usbc_data->usb_mock.opcode_rw)
+ 		return usbc_data->usb_mock.opcode_rw((void *)usbc_data, read_op, write_op);
+ 
+-	if (max77775->suspended == true) {
++	if (max77775_is_suspend_blocked(max77775)) {
+ 		msg_maxim("max77775 in suspend state, just return");
+ 		return -EACCES;
+ 	}
+@@ -4217,6 +4222,42 @@
+ {
+ 	struct max77775_usbc_platform_data *usbc_data =
+ 		dev_get_drvdata(dev);
++	struct max77775_dev *max77775 = usbc_data->max77775;
++
++	/*
++	 * The USB-C child is suspended before its MAX77775 MFD parent.  Gate
++	 * new IRQ/opcode activity first, then drain every asynchronous path
++	 * that can still access the CCIC or publish a detach notification.
++	 */
++	WRITE_ONCE(max77775->suspend_gate, true);
++	synchronize_irq(max77775->irq);
++
++	cancel_work_sync(&usbc_data->cc_open_req_work);
++	cancel_work_sync(&usbc_data->dp_configure_work);
++	cancel_work_sync(&usbc_data->op_send_work);
++#ifdef MAX77775_SYS_FW_UPDATE
++	cancel_work_sync(&usbc_data->fw_update_work);
++#endif
++	cancel_delayed_work_sync(&usbc_data->acc_detach_work);
++	cancel_delayed_work_sync(&usbc_data->vbus_hard_reset_work);
++#if IS_ENABLED(CONFIG_USB_NOTIFY_LAYER)
++	cancel_delayed_work_sync(&usbc_data->usb_external_notifier_register_work);
++#endif
++#if defined(CONFIG_SEC_FACTORY)
++	cancel_delayed_work_sync(&usbc_data->factory_state_work);
++	cancel_delayed_work_sync(&usbc_data->factory_rid_work);
++#endif
++#if defined(CONFIG_MAX77775_CCOPEN_AFTER_WATERCABLE)
++	cancel_delayed_work_sync(&usbc_data->set_ccopen_for_watercable_work);
++#endif
++	if (usbc_data->op_wait_queue)
++		flush_workqueue(usbc_data->op_wait_queue);
++	if (usbc_data->op_send_queue)
++		flush_workqueue(usbc_data->op_send_queue);
++#if IS_ENABLED(CONFIG_PDIC_NOTIFIER)
++	if (usbc_data->ccic_wq)
++		flush_workqueue(usbc_data->ccic_wq);
++#endif
+ 
+ 	max77775_muic_suspend(usbc_data);
+ 
+@@ -4227,6 +4268,11 @@
+ {
+ 	struct max77775_usbc_platform_data *usbc_data =
+ 		dev_get_drvdata(dev);
++	struct max77775_dev *max77775 = usbc_data->max77775;
++
++	/* Parent resume clears max77775->suspended before this child resumes. */
++	WRITE_ONCE(max77775->suspend_gate, false);
++	wake_up_interruptible(&max77775->suspend_wait);
+ 
+ 	max77775_muic_resume(usbc_data);
+ 	if (usbc_data->set_altmode_error) {
+
+--- a/drivers/usb/typec/maxim/max77775_cc.c
++++ b/drivers/usb/typec/maxim/max77775_cc.c
+@@ -54,6 +54,13 @@
+ 		container_of(data, struct pdic_state_work, pdic_work);
+ 	PD_NOTI_TYPEDEF ccic_noti;
+ 
++	if (g_usbc_data &&
++		max77775_is_suspend_blocked(g_usbc_data->max77775)) {
++		msg_maxim("MAX77775 suspend gate: drop queued PDIC event");
++		kfree(event_work);
++		return;
++	}
++
+ 	switch (event_work->dest) {
+ 	case PDIC_NOTIFY_DEV_USB:
+ 			msg_maxim("usb: dest=%s, id=%s, attach=%s, drp=%s",
+@@ -95,6 +102,11 @@
+ 	if (usbpd_data->usb_mock.ccic_event_work)
+ 		return usbpd_data->usb_mock.ccic_event_work(data, dest, id, attach, event, sub);
+ 
++	if (max77775_is_suspend_blocked(usbpd_data->max77775)) {
++		msg_maxim("MAX77775 suspend gate: drop PDIC event");
++		return;
++	}
++
+ 	msg_maxim("usb: DIAES %d-%d-%d-%d-%d", dest, id, attach, event, sub);
+ 	event_work = kmalloc(sizeof(struct pdic_state_work), GFP_KERNEL);
+ 	if (!event_work) {
+@@ -149,6 +161,12 @@
+ 		}
+ 	}
+ 
++	if (max77775_is_suspend_blocked(usbpd_data->max77775)) {
++		msg_maxim("MAX77775 suspend gate: drop PDIC event before queue");
++		kfree(event_work);
++		return;
++	}
++
+ 	queue_work(usbpd_data->ccic_wq, &event_work->pdic_work);
+ }
+ #endif

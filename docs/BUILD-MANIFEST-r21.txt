@@ -1,0 +1,53 @@
+S25 GKI 6.6.152 r21 source deep boot-only
+
+Scope
+-----
+- Rebuild kernel Image from the current 6.6.152 source tree with the
+  delayed deep-suspend selection in kernel/power/suspend.c.
+- Keep boot-time suspend operation registration unchanged.
+- On the first real PM_SUSPEND_TO_IDLE request, select PM_SUSPEND_MEM with
+  s25_suspend_force_deep=1; keep the USB-offline guard available for s2idle.
+- Boot-only AK3: no vendor_dlkm image and no vendor_dlkm flash operation.
+- no_vbmeta_partition_patch=1.
+
+Source
+------
+work/s25-gki-android15-6.6-latest
+
+Build output
+------------
+/home/ubuntu/s25-out-native-r21
+
+Toolchain
+---------
+Ubuntu clang 18.1.3 (Ubuntu 24.04 VM); LLVM_IAS=1; 6 GiB swap enabled for BTF.
+
+Validation
+----------
+- Complete r7/r11-style symbol configuration; Module.symvers has 17,186 lines.
+- vmlinux, BTF, MODPOST, Image and all configured module BTF targets completed.
+- Built-in symbols include s25_suspend_force_deep, s25_suspend_guard and
+  suspend_devices_and_enter.
+- anykernel.sh passes bash -n.
+- Package must contain Image, Image.config, Image.symvers, AK3 files, and no
+  vendor_dlkm.img before release.
+- Device flash/reboot is intentionally not performed automatically.
+
+ReSukiSU
+--------
+- CI release: v35089 (run 32561471902)
+- source commit: b2ac2fc8703ce9f5226e2a38a59f8b72f8a3005c
+- source tree: /home/ubuntu/ReSukiSU-main (Git metadata retained)
+- version: v4.2.0-rc1; calculated code 35089
+- builtin-only; no LKM/KPM/vendor_dlkm payload
+
+Artifacts
+---------
+- Image: 38,918,656 bytes; SHA256
+  eb8c8544204e57f2aed4677ad8d53b773ea585217fc2d394ffcc10340e5164bc
+- Image.config: 214,432 bytes; SHA256
+  d7700e89a5f39941c4fa3374b66894f6fbb1ad1bd0490f7e215dc709924027f5
+- Image.symvers: 1,067,389 bytes; SHA256
+  677d64d0fb9c76b32935fa76dc0bb58a90e3cf5b2bfb47ecb4aa10a9e80a3bc9
+- vmlinux SHA256:
+  7df38c16a232967de125a3936ec8c5eac5a6564b1abce55a80010aecead9d044
