@@ -57,7 +57,7 @@ docs/S25-SUSPEND-FIX.md 与 docs/README-S25-HANDOFF.md。
 ## 刷入要求
 
 - 已解锁 Bootloader
-- 支持 AnyKernel3 ZIP 的 Recovery 或内核刷写工具
+- 支持 AnyKernel3 ZIP 的 Recovery 或内核刷写工具(https://github.com/capntrips/KernelFlasher/releases)
 - 与当前固件和活动槽位对应的原厂 boot.img 备份
 - 已确认能够进入 Download Mode，并能通过 Odin 或其他可靠方式恢复
 
@@ -67,13 +67,10 @@ vendor_dlkm、system_dlkm、vendor_boot、dtbo 或 vbmeta。
 ## 刷入方法
 
 1. 备份当前活动槽位的原厂 boot 分区。
-2. 下载 r21 文件并校验 SHA-256。
+2. 下载 r21 文件。
 3. 使用支持 AnyKernel3 的工具刷入 AK3 ZIP。
 4. 重启后检查内核版本、触摸、网络、相机、音频、充电和 USB 功能。
-5. 出现卡第一屏、循环重启或模块加载异常时，立即恢复原厂 boot.img。
-
-不要同时刷入旧 r2 包和 r21 包。切换内核版本前，建议先恢复同一固件的
-原厂 boot，再刷入目标包。
+5. 出现卡第一屏、循环重启或模块加载异常时，立即通过Odin恢复原厂 boot.img。
 
 ## 源码与版本
 
