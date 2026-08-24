@@ -8,13 +8,13 @@ KMI。它不是直接刷入的纯 Google GKI，也不是适用于所有 6.6 设�
 
 ## 下载
 
-刷机包请前往 [Releases](../../releases)。当前 r21 只发布 boot-only 内置版：
+刷机包请前往 [Releases](../../releases)。当前 r21 只发布 Resukisu 内置版：
 
 | 文件 | 说明 | 状态 |
 | --- | --- | --- |
-| S25U-S938B-GKI-6.6.152-r21-SOURCE-DEEP-ReSukiSU-SUSFS-AK3.zip | 内置 ReSukiSU 与 SUSFS；延迟选择 deep suspend；不含 LKM/KPM/vendor_dlkm | SM-S938B/pa3q 已通过维护者真机刷入/启动测试 |
-| ReSukiSU_v4.2.0-rc1_35089-universal-release.apk | 对应的 ReSukiSU 管理器 | 与 r21 元数据一致 |
-| s25-gki-android15-6.6.152-r21-source.tar.gz | 与 Image 准确对应的完整源码快照 | 用于复现和源码对应 |
+| S25U-GKI-6.6.152-r21-SOURCE-DEEP-ReSukiSU-SUSFS-AK3.zip | 内置 ReSukiSU 与 SUSFS；延迟选择 deep suspend；不含 LKM/KPM/vendor_dlkm | SM-S938B/pa3q 已通过维护者真机刷入/启动测试 |
+| ReSukiSU_v4.2.0-rc1_35089-release.apk | 对应的 ReSukiSU 管理器 | 与 r21 元数据一致 |
+| source-kernel.tar.gz | 与 Image 准确对应的完整源码快照 | 用于复现和源码对应 |
 
 r21 不提供 LKM Ready 变体，也不应把旧的 6.6.142 r2 包和本版本混用。
 
@@ -57,23 +57,19 @@ docs/S25-SUSPEND-FIX.md 与 docs/README-S25-HANDOFF.md。
 ## 刷入要求
 
 - 已解锁 Bootloader
-- 支持 AnyKernel3 ZIP 的 Recovery 或内核刷写工具
+- 支持 AnyKernel3 ZIP 的 Recovery 或内核刷写工具(https://github.com/capntrips/KernelFlasher/releases)
 - 与当前固件和活动槽位对应的原厂 boot.img 备份
 - 已确认能够进入 Download Mode，并能通过 Odin 或其他可靠方式恢复
 
-刷写自定义 boot 前，先保存原厂 boot，并确认目标槽位。r21 不修改
-vendor_dlkm、system_dlkm、vendor_boot、dtbo 或 vbmeta。
+刷写自定义 boot 前，先保存原厂 boot，并确认目标槽位。
 
 ## 刷入方法
 
 1. 备份当前活动槽位的原厂 boot 分区。
-2. 下载 r21 文件并校验 SHA-256。
+2. 下载 r21 文件。
 3. 使用支持 AnyKernel3 的工具刷入 AK3 ZIP。
 4. 重启后检查内核版本、触摸、网络、相机、音频、充电和 USB 功能。
-5. 出现卡第一屏、循环重启或模块加载异常时，立即恢复原厂 boot.img。
-
-不要同时刷入旧 r2 包和 r21 包。切换内核版本前，建议先恢复同一固件的
-原厂 boot，再刷入目标包。
+5. 出现卡第一屏、循环重启或模块加载异常时，立即通过Odin恢复原厂 boot.img。
 
 ## 源码与版本
 
@@ -83,7 +79,7 @@ vendor_dlkm、system_dlkm、vendor_boot、dtbo 或 vbmeta。
 - SUSFS：v2.2.0
 - 设备兼容基线：Samsung SM8750/S25 vendor GKI source
 
-Release 中的 source.tar.gz 是与 r21 Image 准确对应的完整源码快照，包含
+Release 中的 source-kernel.tar.gz 是与 r21 Image 准确对应的完整源码快照，包含
 ReSukiSU、SUSFS、配置和 S25 改动；不包含 .git、构建输出、签名私钥、原厂
 boot 镜像或 Samsung 专有 vendor 模块。vendor-patches 中的 MAX77775 补丁
 是候选方向，不属于 boot-only r21 payload。
