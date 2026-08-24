@@ -61,8 +61,7 @@ docs/S25-SUSPEND-FIX.md 与 docs/README-S25-HANDOFF.md。
 - 与当前固件和活动槽位对应的原厂 boot.img 备份
 - 已确认能够进入 Download Mode，并能通过 Odin 或其他可靠方式恢复
 
-刷写自定义 boot 前，先保存原厂 boot，并确认目标槽位。r21 不修改
-vendor_dlkm、system_dlkm、vendor_boot、dtbo 或 vbmeta。
+刷写自定义 boot 前，先保存原厂 boot，并确认目标槽位。
 
 ## 刷入方法
 
@@ -80,7 +79,7 @@ vendor_dlkm、system_dlkm、vendor_boot、dtbo 或 vbmeta。
 - SUSFS：v2.2.0
 - 设备兼容基线：Samsung SM8750/S25 vendor GKI source
 
-Release 中的 source.tar.gz 是与 r21 Image 准确对应的完整源码快照，包含
+Release 中的 source-kernel.tar.gz 是与 r21 Image 准确对应的完整源码快照，包含
 ReSukiSU、SUSFS、配置和 S25 改动；不包含 .git、构建输出、签名私钥、原厂
 boot 镜像或 Samsung 专有 vendor 模块。vendor-patches 中的 MAX77775 补丁
 是候选方向，不属于 boot-only r21 payload。
