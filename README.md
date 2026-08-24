@@ -12,7 +12,7 @@ KMI。它不是直接刷入的纯 Google GKI，也不是适用于所有 6.6 设�
 
 | 文件 | 说明 | 状态 |
 | --- | --- | --- |
-| S25U-GKI-6.6.152-r21-SOURCE-DEEP-ReSukiSU-SUSFS-AK3.zip | 内置 ReSukiSU 与 SUSFS；延迟选择 deep suspend；不含 LKM/KPM/vendor_dlkm | SM-S938B/pa3q 已通过维护者真机刷入/启动测试 |
+| S25U-GKI-6.6.152-r21-SOURCE-DEEP-ReSukiSU-SUSFS-AK3.zip | 内置 ReSukiSU 与 SUSFS；延迟选择 deep suspend；不含 LKM/KPM | SM-S938B/pa3q 已通过维护者真机刷入/启动测试 |
 | ReSukiSU_v4.2.0-rc1_35089-release.apk | 对应的 ReSukiSU 管理器 | 与 r21 元数据一致 |
 | source-kernel.tar.gz | 与 Image 准确对应的完整源码快照 | 用于复现和源码对应 |
 
