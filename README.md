@@ -1,95 +1,163 @@
-# Samsung Galaxy S25 GKI 6.6.152 r21
+# S25 GKI 项目接管入口
 
-面向三星 Galaxy S25 Ultra SM-S938B/pa3q 的 Linux 6.6.152 GKI 内核实验构建。
+当前设备版源码、r26 构建、ReSukiSU 版本、boot-only AK3 边界、测试和恢复步骤，请先阅读 [README-S25-HANDOFF.md](README-S25-HANDOFF.md)，再查看 [R26-CONTENTS.md](R26-CONTENTS.md)。
 
-本项目以三星 SM8750/S25 vendor GKI 源码作为设备兼容基线，合并
-Android Common/Linux Stable 至 6.6.152，并保留三星 vendor 模块所需的
-KMI。它不是直接刷入的纯 Google GKI，也不是适用于所有 6.6 设备的通用内核。
+以下内容保留 Android Common 上游的补丁提交规范。
 
-## 下载
+---
 
-刷机包请前往 [Releases](../../releases)。当前 r21 只发布 Resukisu 内置版：
+# How do I submit patches to Android Common Kernels
 
-| 文件 | 说明 | 状态 |
-| --- | --- | --- |
-| S25U-GKI-6.6.152-r21-SOURCE-DEEP-ReSukiSU-SUSFS-AK3.zip | 内置 ReSukiSU 与 SUSFS；延迟选择 deep suspend；不含 LKM/KPM | SM-S938B/pa3q 已通过维护者真机刷入/启动测试 |
-| ReSukiSU_v4.2.0-rc1_35089-release.apk | 对应的 ReSukiSU 管理器 | 与 r21 元数据一致 |
-| source-kernel.tar.gz | 与 Image 准确对应的完整源码快照 | 用于复现和源码对应 |
+1. BEST: Make all of your changes to upstream Linux. If appropriate, backport to the stable releases.
+   These patches will be merged automatically in the corresponding common kernels. If the patch is already
+   in upstream Linux, post a backport of the patch that conforms to the patch requirements below.
+   - Do not send patches upstream that contain only symbol exports. To be considered for upstream Linux,
+additions of `EXPORT_SYMBOL_GPL()` require an in-tree modular driver that uses the symbol -- so include
+the new driver or changes to an existing driver in the same patchset as the export.
+   - When sending patches upstream, the commit message must contain a clear case for why the patch
+is needed and beneficial to the community. Enabling out-of-tree drivers or functionality is not
+a persuasive case.
 
-r21 不提供 LKM Ready 变体，也不应把旧的 6.6.142 r2 包和本版本混用。
+2. LESS GOOD: Develop your patches out-of-tree (from an upstream Linux point-of-view). Unless these are
+   fixing an Android-specific bug, these are very unlikely to be accepted unless they have been
+   coordinated with kernel-team@android.com. If you want to proceed, post a patch that conforms to the
+   patch requirements below.
 
-## 主要特性
+# Common Kernel patch requirements
 
-- 内核版本：6.6.152
-- Kernel release：6.6.152-pe17667d-abogkiS938BXXU9CZDP-4k
-- ReSukiSU：v4.2.0-rc1，版本码 35089，builtin-only
-- SUSFS：v2.2.0
-- AnyKernel3 只写当前活动槽位的 boot 分区
-- do.devicecheck=1，目标设备为 pa3q/pa3qxxx
-- 不包含 LKM 或 KPM payload
-- 保留 BTF、CONFIG_MODVERSIONS 和 Image.symvers
+- All patches must conform to the Linux kernel coding standards and pass `scripts/checkpatch.pl`
+- Patches shall not break gki_defconfig or allmodconfig builds for arm, arm64, x86, x86_64 architectures
+(see  https://source.android.com/setup/build/building-kernels)
+- If the patch is not merged from an upstream branch, the subject must be tagged with the type of patch:
+`UPSTREAM:`, `BACKPORT:`, `FROMGIT:`, `FROMLIST:`, or `ANDROID:`.
+- All patches must have a `Change-Id:` tag (see https://gerrit-review.googlesource.com/Documentation/user-changeid.html)
+- If an Android bug has been assigned, there must be a `Bug:` tag.
+- All patches must have a `Signed-off-by:` tag by the author and the submitter
 
-## USB-offline suspend workaround
+Additional requirements are listed below based on patch type
 
-r21 在内置 suspend 代码中保留了可回退的 S25 workaround：
+## Requirements for backports from mainline Linux: `UPSTREAM:`, `BACKPORT:`
 
-- 第一次真实的 PM_SUSPEND_TO_IDLE 请求到来后，选择 PM_SUSPEND_MEM。
-- 启动阶段不改动 suspend operation 注册顺序，避免早期 PM 初始化受影响。
-- USB power-supply 状态在 suspend 前刷新，并保留可运行时关闭的 s2idle guard。
+- If the patch is a cherry-pick from Linux mainline with no changes at all
+    - tag the patch subject with `UPSTREAM:`.
+    - add upstream commit information with a `(cherry picked from commit ...)` line
+    - Example:
+        - if the upstream commit message is
+```
+        important patch from upstream
 
-该改动是针对 USB 断开后息屏异常的源码级 workaround，不是已经确认的
-Samsung MAX77775/PDIC vendor 根因修复。运行时参数和 A/B 测试步骤见
-docs/S25-SUSPEND-FIX.md 与 docs/README-S25-HANDOFF.md。
+        This is the detailed description of the important patch
 
-## 兼容性与测试
+        Signed-off-by: Fred Jones <fred.jones@foo.org>
+```
+>- then Joe Smith would upload the patch for the common kernel as
+```
+        UPSTREAM: important patch from upstream
 
-已测试目标：
+        This is the detailed description of the important patch
 
-- 型号：SM-S938B
-- 设备代号：pa3q
-- 包类型：boot-only AK3
+        Signed-off-by: Fred Jones <fred.jones@foo.org>
 
-维护者已确认 r21 AK3 通过真机刷入/启动测试。这个结果不代表所有 S25
-型号、地区固件或 vendor 模块都兼容，也不代表长期 USB 断开息屏稳定性已经
-完成统计。S25、S25+ 或其他地区版本可能具有不同的 vendor 模块、DTB、面板、
-基带及 boot 镜像布局。
+        Bug: 135791357
+        Change-Id: I4caaaa566ea080fa148c5e768bb1a0b6f7201c01
+        (cherry picked from commit c31e73121f4c1ec41143423ac6ce3ce6dafdcec1)
+        Signed-off-by: Joe Smith <joe.smith@foo.org>
+```
 
-## 刷入要求
+- If the patch requires any changes from the upstream version, tag the patch with `BACKPORT:`
+instead of `UPSTREAM:`.
+    - use the same tags as `UPSTREAM:`
+    - add comments about the changes under the `(cherry picked from commit ...)` line
+    - Example:
+```
+        BACKPORT: important patch from upstream
 
-- 已解锁 Bootloader
-- 支持 AnyKernel3 ZIP 的 Recovery 或内核刷写工具(https://github.com/capntrips/KernelFlasher/releases)
-- 与当前固件和活动槽位对应的原厂 boot.img 备份
-- 已确认能够进入 Download Mode，并能通过 Odin 或其他可靠方式恢复
+        This is the detailed description of the important patch
 
-刷写自定义 boot 前，先保存原厂 boot，并确认目标槽位。
+        Signed-off-by: Fred Jones <fred.jones@foo.org>
 
-## 刷入方法
+        Bug: 135791357
+        Change-Id: I4caaaa566ea080fa148c5e768bb1a0b6f7201c01
+        (cherry picked from commit c31e73121f4c1ec41143423ac6ce3ce6dafdcec1)
+        [joe: Resolved minor conflict in drivers/foo/bar.c ]
+        Signed-off-by: Joe Smith <joe.smith@foo.org>
+```
 
-1. 备份当前活动槽位的原厂 boot 分区。
-2. 下载 r21 文件。
-3. 使用支持 AnyKernel3 的工具刷入 AK3 ZIP。
-4. 重启后检查内核版本、触摸、网络、相机、音频、充电和 USB 功能。
-5. 出现卡第一屏、循环重启或模块加载异常时，立即通过Odin恢复原厂 boot.img。
+## Requirements for other backports: `FROMGIT:`, `FROMLIST:`,
 
-## 源码与版本
+- If the patch has been merged into an upstream maintainer tree, but has not yet
+been merged into Linux mainline
+    - tag the patch subject with `FROMGIT:`
+    - add info on where the patch came from as `(cherry picked from commit <sha1> <repo> <branch>)`. This
+must be a stable maintainer branch (not rebased, so don't use `linux-next` for example).
+    - if changes were required, use `BACKPORT: FROMGIT:`
+    - Example:
+        - if the commit message in the maintainer tree is
+```
+        important patch from upstream
 
-- ReSukiSU 源码：https://github.com/ReSukiSU/ReSukiSU
-- ReSukiSU commit：b2ac2fc8703ce9f5226e2a38a59f8b72f8a3005c
-- ReSukiSU CI release：https://github.com/cctv18/ReSukiSU_CI/releases/tag/ReSukiSU_32561471902
-- SUSFS：v2.2.0
-- 设备兼容基线：Samsung SM8750/S25 vendor GKI source
+        This is the detailed description of the important patch
 
-Release 中的 source-kernel.tar.gz 是与 r21 Image 准确对应的完整源码快照，包含
-ReSukiSU、SUSFS、配置和 S25 改动；不包含 .git、构建输出、签名私钥、原厂
-boot 镜像或 Samsung 专有 vendor 模块。vendor-patches 中的 MAX77775 补丁
-是候选方向，不属于 boot-only r21 payload。
+        Signed-off-by: Fred Jones <fred.jones@foo.org>
+```
+>- then Joe Smith would upload the patch for the common kernel as
+```
+        FROMGIT: important patch from upstream
 
-构建复现请阅读 build/BUILDING-r21.md，并使用 configs/r7-6.6.152-r21.config。
+        This is the detailed description of the important patch
 
-## 免责声明
+        Signed-off-by: Fred Jones <fred.jones@foo.org>
 
-刷写自定义内核可能导致无法开机、数据丢失、保修或安全功能失效。作者和
-贡献者不对设备损坏或数据损失负责。请先备份，并自行判断风险。
+        Bug: 135791357
+        (cherry picked from commit 878a2fd9de10b03d11d2f622250285c7e63deace
+         https://git.kernel.org/pub/scm/linux/kernel/git/foo/bar.git test-branch)
+        Change-Id: I4caaaa566ea080fa148c5e768bb1a0b6f7201c01
+        Signed-off-by: Joe Smith <joe.smith@foo.org>
+```
 
-本项目以及所包含的第三方代码分别遵循各自许可证。Linux 内核源码按照
-GPL-2.0 条款提供。
+
+- If the patch has been submitted to LKML, but not accepted into any maintainer tree
+    - tag the patch subject with `FROMLIST:`
+    - add a `Link:` tag with a link to the submittal on lore.kernel.org
+    - add a `Bug:` tag with the Android bug (required for patches not accepted into
+a maintainer tree)
+    - if changes were required, use `BACKPORT: FROMLIST:`
+    - Example:
+```
+        FROMLIST: important patch from upstream
+
+        This is the detailed description of the important patch
+
+        Signed-off-by: Fred Jones <fred.jones@foo.org>
+
+        Bug: 135791357
+        Link: https://lore.kernel.org/lkml/20190619171517.GA17557@someone.com/
+        Change-Id: I4caaaa566ea080fa148c5e768bb1a0b6f7201c01
+        Signed-off-by: Joe Smith <joe.smith@foo.org>
+```
+
+- If a patch has been submitted to the community, but rejected, do NOT use the
+  `FROMLIST:` tag to try to hide this fact.  Use the `ANDROID:` tag as
+  described below as this must be considered as an Android-specific submission,
+  not an upstream submission as the community will not accept these changes
+  as-is.
+
+## Requirements for Android-specific patches: `ANDROID:`
+
+- If the patch is fixing a bug to Android-specific code
+    - tag the patch subject with `ANDROID:`
+    - add a `Fixes:` tag that cites the patch with the bug
+    - Example:
+```
+        ANDROID: fix android-specific bug in foobar.c
+
+        This is the detailed description of the important fix
+
+        Fixes: 1234abcd2468 ("foobar: add cool feature")
+        Change-Id: I4caaaa566ea080fa148c5e768bb1a0b6f7201c01
+        Signed-off-by: Joe Smith <joe.smith@foo.org>
+```
+
+- If the patch is a new feature
+    - tag the patch subject with `ANDROID:`
+    - add a `Bug:` tag with the Android bug (required for android-specific features)

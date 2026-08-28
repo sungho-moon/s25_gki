@@ -1,0 +1,15 @@
+source_repo=https://github.com/ReSukiSU/ReSukiSU
+source_commit=b2ac2fc8703ce9f5226e2a38a59f8b72f8a3005c
+source_tag=v4.2.0-rc1
+source_commit_count=4389
+ci_run=https://github.com/ReSukiSU/ReSukiSU/actions/runs/32561471902
+ci_release=https://github.com/cctv18/ReSukiSU_CI/releases/tag/ReSukiSU_32561471902
+ci_release_tag=v35089
+version_code=35089
+version_full=v4.2.0-rc1-b2ac2fc8@ReSukiSU
+manager_asset=ReSukiSU_v4.2.0-rc1_35089-universal-release.apk
+manager_asset_sha256=9e5e9157bb8b543d27e68646127eb957c89360f6fb37bf54d2a4906512857c46
+manager_asset_url=https://github.com/cctv18/ReSukiSU_CI/releases/download/ReSukiSU_32561471902/ReSukiSU_v4.2.0-rc1_35089-universal-release.apk
+variant=builtin_only_no_lkm
+note=The CI release also contains LKM assets; none are included in this package.
+note=The boot package contains no vendor_dlkm.img and the AK3 writer has no vendor_dlkm/system_dlkm/dtbo flash calls.

@@ -1,0 +1,79 @@
+S25 GKI 6.6.152 r26 Samsung hotspot/TCPMSS + xHCI fix boot-only
+
+Scope
+-----
+- Restore the built-in xt_TCPMSS target required by Android netd tethering.
+- Fix the confirmed Type-C detach panic in xhci_free_virt_device.
+- Keep the valid struct xhci_virt_device pointer saved by xhci_free_dev.
+- Clear DCBAA and xhci->devs[slot_id] only while they still identify that
+  saved device.
+- Remove the unsafe unnamed bit-1 freeing/setup guards.
+- Retain the r21 delayed deep-suspend policy unchanged.
+- Boot-only AK3: no vendor_dlkm image or flash operation.
+- no_vbmeta_partition_patch=1.
+
+Evidence
+--------
+- Samsung persistent last-kmsg: xhci_free_virt_device+0x54/0x308.
+- Call path: __dwc3_set_mode -> dwc3_host_exit -> xhci_plat_remove ->
+  usb_remove_hcd -> usb_disconnect -> xhci_free_dev ->
+  xhci_free_virt_device.
+- Fault address 0x12a0 matches a null device pointer plus the old dev->flags
+  access offset.
+- A previous persistent crash record has the same PC, proving recurrence.
+
+- Hotspot evidence: SoftAP/DHCP succeeded, then ip6tables-restore failed with
+  `goto 'tetherctrl_counters' is not a chain`; runtime `TCPMSS` target was
+  absent from `/proc/net/ip_tables_targets`.
+
+Source
+------
+/home/ubuntu/s25-gki-overlay (native ext4 build tree)
+
+Changed authoritative files
+---------------------------
+- net/netfilter/xt_TCPMSS.c (native ext4 case-preserving checkout)
+- drivers/usb/host/xhci-mem.c
+- drivers/usb/host/xhci.c
+
+Build output
+------------
+/home/ubuntu/s25-out-native-r26-clean
+
+Toolchain and build mode
+------------------------
+- Ubuntu clang/LLD 18.1.3 in ai-linux.
+- Exact LLVM prefix: LLVM=/usr/lib/llvm-18/bin/; LLVM_IAS=1.
+- 8 vCPU, final -j16, 6 GiB RAM, no swap.
+- Native ext4 checkout avoids Windows case-collision corruption.
+- Kbuild completed vmlinux, BTF, kallsyms, module metadata, and Image.
+- External module targets were skipped because the release is boot-only.
+
+ReSukiSU
+--------
+- CI release: v35089 (run 32561471902)
+- source commit: b2ac2fc8703ce9f5226e2a38a59f8b72f8a3005c
+- version: v4.2.0-rc1; calculated code 35089
+- builtin-only; no LKM/KPM/vendor_dlkm payload
+
+Validation
+----------
+- Build ended with exit code 0.
+- `CONFIG_NETFILTER_XT_TARGET_TCPMSS=y`, match unset, and
+  `tcpmss_tg_init` is present in both `xt_TCPMSS.o` and `vmlinux`.
+- The Image contains v4.2.0-rc1-b2ac2fc8@ReSukiSU.
+- Old strings "Device slot ... already being freed" and
+  "being freed, aborting setup" occur zero times in Image.
+- xhci_free_virt_device+0x54 disassembles to the conditional DCBAA clear,
+  not a dev->flags access.
+- vmlinux.symvers contains 16,664 lines.
+- Device flash and reboot were intentionally not performed automatically.
+
+Artifacts
+---------
+- Image: 38,922,752 bytes; SHA256
+  b221c4ce00c17ca91bc3c5ecf8e3b7fdeb487c919eb5dc870df96ab4ff742b6c
+- `.config`: SHA256
+  d7700e89a5f39941c4fa3374b66894f6fbb1ad1bd0490f7e215dc709924027f5
+- vmlinux: 348,365,952 bytes; SHA256
+  9278095d67f1df57b94d2c2002df47869a3834d0f929fd399fb96a3bdd76eb4e
