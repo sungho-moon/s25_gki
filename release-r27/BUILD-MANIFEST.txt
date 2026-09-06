@@ -1,0 +1,68 @@
+S25 GKI 6.6.152 r27 ReSukiSU v35116 boot-only
+
+Scope
+-----
+- Update built-in ReSukiSU from v35089 to v35116.
+- Preserve the r26 xHCI detach, TCPMSS tethering, and delayed suspend fixes.
+- Keep the package boot-only with no vendor partition or vbmeta changes.
+
+Source provenance
+-----------------
+- Base source asset: v6.6.152-r21/source-kernel.tar.gz
+- Base source SHA256: 6dba25e5f50d76dc65b32cbd6444fa7022d34bca8358f316af4745a83f86b70c
+- ReSukiSU source: https://github.com/ReSukiSU/ReSukiSU
+- ReSukiSU commit: f7829ddf548a18b851d653feb76b4a569b8fd2a4
+- ReSukiSU commit count/version code: 4416 / 35116
+- ReSukiSU CI run: https://github.com/ReSukiSU/ReSukiSU/actions/runs/33939268200
+- ReSukiSU CI release: https://github.com/cctv18/ReSukiSU_CI/releases/tag/ReSukiSU_33939268200
+- SUSFS branch: gki-android15-6.6
+- SUSFS compatibility commit: 7767a46
+- SUSFS version: v2.2.0
+- Linux stable TCPMSS/netfilter recovery base: v6.6.152 (commit c610b395b)
+
+Integration
+-----------
+- Synced ReSukiSU kernel sources into drivers/kernelsu.
+- Materialized the matching ReSukiSU UAPI headers for a source-copy build.
+- Kept an explicit v35116 fallback identity in drivers/kernelsu/Kbuild.
+- Updated SUSFS thread-flag helpers required by ReSukiSU v35116.
+- Restored all compiled case-colliding netfilter source/header pairs on ext4.
+- Restored the r26 Android Common xHCI saved-device ownership fix.
+
+Build environment
+-----------------
+- Ubuntu 26.04 LTS under WSL2, native ext4 source/output directories.
+- Ubuntu clang/LLD 18.1.8; LLVM=/usr/lib/llvm-18/bin/; LLVM_IAS=1.
+- 12 build jobs, 7.8 GiB RAM, 4 GiB swap available.
+- Started from a new output directory with the r26 Image.config.
+- The build resumed after restoring archive-lost case-sensitive headers and
+  the matching SUSFS helper header; all selected objects were compiled and the
+  final build completed with BUILD_RC=0.
+
+Validation
+----------
+- Kernel release: 6.6.152-pe17667d-abogkiS938BXXU9CZDP-4k
+- ReSukiSU version string occurs once in Image:
+  v4.2.0-rc1-f7829ddf@ReSukiSU
+- CONFIG_KSU=y and CONFIG_KSU_SUSFS=y.
+- CONFIG_NETFILTER_XT_TARGET_TCPMSS=y and the match is disabled.
+- tcpmss_tg_init is present in vmlinux; tcpmss_mt_init is absent.
+- Old xHCI workaround strings occur zero times in Image.
+- vmlinux.symvers contains 16,664 lines.
+- bash syntax checks pass for anykernel.sh and tools/ak3-core.sh.
+- Device flash and reboot were not performed.
+
+Artifacts
+---------
+- Image: 38,791,680 bytes
+  SHA256: 4ae7362c540b54bb5da924bdfc1e225502182db9b19cf489ba597be41a66d8d1
+- Image.config: 214,433 bytes
+  SHA256: 3fc2310523a3f7a22ab59c602c80d59b906d850a3ea71e234e4784dfc29b955b
+- vmlinux: 356,888,520 bytes
+  SHA256: 0dd38cc61e5108abe65af6d9302dc55aecdcb7000418395b79375a6122a9dcb0
+- Image.symvers: 1,030,951 bytes
+  SHA256: 7edff97071565229f01f670926546e306cbf03612bbcf8df9aa837369205e1a8
+- System.map: 5,433,724 bytes
+  SHA256: ff14af804a28f04f648f4c24e44abda594345efa91a0cfac5a2ba43712b58a3c
+- Manager APK: ReSukiSU_v4.2.0-rc1_35116-universal-release.apk
+  SHA256: 104fff78340e7d41b1d016ae3de029c3974a0e494ba1671b3b8e4b0c722241d5

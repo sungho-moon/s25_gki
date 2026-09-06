@@ -1,0 +1,2 @@
+# R27 kernel ZIP withdrawn after confirmed ksu_handle_faccessat boot panic.
+104fff78340e7d41b1d016ae3de029c3974a0e494ba1671b3b8e4b0c722241d5  ReSukiSU_v4.2.0-rc1_35116-universal-release.apk

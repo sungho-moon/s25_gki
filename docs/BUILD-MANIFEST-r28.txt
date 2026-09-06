@@ -1,0 +1,66 @@
+S25 GKI 6.6.152 r28 ReSukiSU v35116 faccessat hotfix
+
+Scope
+-----
+- Repair the R27 ksu_handle_faccessat boot panic.
+- Preserve the r26 xHCI detach, TCPMSS tethering and delayed suspend fixes.
+- Keep the release boot-only with no vendor partition or vbmeta changes.
+
+Failure evidence
+----------------
+- Failing release: r27
+- Trigger: /data/adb/ksud post-fs-data, pid 1597
+- Panic PC: ksu_handle_faccessat+0x34/0xdc
+- Call chain: ksu_handle_faccessat -> do_faccessat -> syscall
+- Source mapping: drivers/kernelsu/feature/sucompat.c:499
+- Cause: const char __user ** passed to a struct filename ** handler
+
+Source provenance
+-----------------
+- Base source asset: v6.6.152-r21/source-kernel.tar.gz
+- Base source SHA256: 6dba25e5f50d76dc65b32cbd6444fa7022d34bca8358f316af4745a83f86b70c
+- ReSukiSU source: https://github.com/ReSukiSU/ReSukiSU
+- ReSukiSU commit: f7829ddf548a18b851d653feb76b4a569b8fd2a4
+- ReSukiSU version: v4.2.0-rc1-f7829ddf@ReSukiSU / 35116
+- SUSFS branch: gki-android15-6.6
+- SUSFS compatibility commit: 7767a4614146d44f7a81a18b6e687dd8316fc959
+- Matching faccessat/stat integration commit: e13f390675ec7915aa51eb1ef727d6ed7a260a90
+
+Build environment
+-----------------
+- Ubuntu 26.04 LTS under WSL2, native ext4 source/output directories
+- Ubuntu clang/LLD 18.1.8; LLVM=/usr/lib/llvm-18/bin/; LLVM_IAS=1
+- New output directory: /home/vantshi/s25-out-r28-hotfix-clean
+- 12 parallel build jobs
+- Full build result: BUILD_RC=0
+- Compiler error lines: 0
+- Compiler warning lines: 0
+
+Validation
+----------
+- Kernel release: 6.6.152-pe17667d-abogkiS938BXXU9CZDP-4k
+- ReSukiSU identity: v4.2.0-rc1-f7829ddf@ReSukiSU
+- CONFIG_KSU=y and CONFIG_KSU_SUSFS=y
+- CONFIG_NETFILTER_XT_TARGET_TCPMSS=y; tcpmss_tg_init is present
+- tcpmss_mt_init is absent
+- ksu_handle_faccessat is present at ffffffc080dd6980
+- ksu_handle_faccessat+0x34 maps to sucompat.c:499
+- do_faccessat disassembly passes the address of its kernel fname slot
+- Device flash and reboot were not performed
+
+Artifacts
+---------
+- AnyKernel3 ZIP: 21,867,512 bytes
+  SHA256: df0f89dc146a4fd3ab99d3eb4651cdbf69af1776cda21e9ef74d987df5e554c1
+- Image: 38,791,680 bytes
+  SHA256: e59c51f7973917604f0340638a5f55719baa399d14670cf1c1c6d759bab6accc
+- Image.config: 214,433 bytes
+  SHA256: 3fc2310523a3f7a22ab59c602c80d59b906d850a3ea71e234e4784dfc29b955b
+- vmlinux: 356,888,920 bytes
+  SHA256: c2e6384f58292949e6c9c61accacb7faa7cca50a48808c9b5f94a1c317ed8031
+- Image.symvers: 1,030,951 bytes
+  SHA256: 7edff97071565229f01f670926546e306cbf03612bbcf8df9aa837369205e1a8
+- System.map: 5,433,832 bytes
+  SHA256: d773be0269d973377eea0e29dd86dbdd21cab0dc769ec0b35528a154aa912f7b
+- Manager APK: ReSukiSU_v4.2.0-rc1_35116-universal-release.apk
+  SHA256: 104fff78340e7d41b1d016ae3de029c3974a0e494ba1671b3b8e4b0c722241d5

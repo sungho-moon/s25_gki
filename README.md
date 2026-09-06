@@ -1,6 +1,6 @@
 # S25 GKI 项目接管入口
 
-当前设备版源码、r26 构建、ReSukiSU 版本、boot-only AK3 边界、测试和恢复步骤，请先阅读 [README-S25-HANDOFF.md](README-S25-HANDOFF.md)，再查看 [R26-CONTENTS.md](R26-CONTENTS.md)。
+当前设备版源码、ReSukiSU 版本、boot-only AK3 边界、测试和恢复步骤，请先阅读 [README-S25-HANDOFF.md](README-S25-HANDOFF.md)。已验证回退基线见 [R26-CONTENTS.md](R26-CONTENTS.md)，R27 已撤回，最新热修复候选见 [R28-CONTENTS.md](R28-CONTENTS.md)。
 
 以下内容保留 Android Common 上游的补丁提交规范。
 

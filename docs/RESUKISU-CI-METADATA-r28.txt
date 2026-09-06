@@ -1,0 +1,17 @@
+source_repo=https://github.com/ReSukiSU/ReSukiSU
+source_commit=f7829ddf548a18b851d653feb76b4a569b8fd2a4
+source_tag=v4.2.0-rc1
+source_commit_count=4416
+ci_run=https://github.com/ReSukiSU/ReSukiSU/actions/runs/33939268200
+ci_release=https://github.com/cctv18/ReSukiSU_CI/releases/tag/ReSukiSU_33939268200
+ci_release_tag=v35116
+version_code=35116
+version_full=v4.2.0-rc1-f7829ddf@ReSukiSU
+manager_asset=ReSukiSU_v4.2.0-rc1_35116-universal-release.apk
+manager_asset_sha256=104fff78340e7d41b1d016ae3de029c3974a0e494ba1671b3b8e4b0c722241d5
+manager_asset_url=https://github.com/cctv18/ReSukiSU_CI/releases/download/ReSukiSU_33939268200/ReSukiSU_v4.2.0-rc1_35116-universal-release.apk
+variant=builtin_only_no_lkm
+susfs_version=v2.2.0
+susfs_branch=gki-android15-6.6
+susfs_compat_commit=7767a46
+note=The CI release also contains LKM assets; none are included in this package.

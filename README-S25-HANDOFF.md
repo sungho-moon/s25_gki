@@ -1,8 +1,9 @@
 # S25 GKI 6.6.152 项目接管说明
 
-> 更新时间：2026-08-26  
-> 目标设备：Samsung Galaxy S25 Ultra，SM-S938B，pa3q/pa3qxxx  
+> 更新时间：2026-09-07
+> 目标设备：Samsung Galaxy S25 Ultra，SM-S938B，pa3q/pa3qxxx
 > 当前已验证基线：Linux GKI 6.6.152，r26 FULL-CLEAN boot-only AK3（用户确认正常开机）
+> 最新待验证构建：r28，ReSukiSU v35116 faccessat hotfix（尚未刷机）
 
 这份文档是给下一位维护者的“从哪里开始、哪些东西能刷、怎样复现和回退”的入口。源码根目录原有的 README.md 是 Android Common 上游补丁提交规范，不能代替本文件；先读本文件，再按需要阅读源码目录中的专项文档。
 
@@ -23,39 +24,45 @@
 | 项目 | 当前值 |
 | --- | --- |
 | Kernel release | 6.6.152-pe17667d-abogkiS938BXXU9CZDP-4k |
-| ReSukiSU | v4.2.0-rc1，版本码 35089，builtin-only |
-| ReSukiSU commit | b2ac2fc8703ce9f5226e2a38a59f8b72f8a3005c |
-| ReSukiSU source count | 4389（用于计算 35089） |
-| SUSFS | v2.2.0 |
-| 发布包 | release-r22/S25U-S938B-GKI-6.6.152-r22-XHCI-SLOT-RACE-FIX-ReSukiSU-SUSFS-AK3.zip |
-| 发布包 SHA256 | 0412410d9dddb40fbae1d02bafa55a4d90daa634954e46ad3307fbd8d0b16f55 |
-| 管理器 APK | release-r21/ReSukiSU_v4.2.0-rc1_35089-universal-release.apk |
-| 管理器 APK SHA256 | 9e5e9157bb8b543d27e68646127eb957c89360f6fb37bf54d2a4906512857c46 |
+| 已验证回退基线 | r26 FULL-CLEAN（用户确认正常开机） |
+| 最新待验证构建 | r28，builtin-only，R27 panic hotfix |
+| ReSukiSU | v4.2.0-rc1，版本码 35116 |
+| ReSukiSU commit | f7829ddf548a18b851d653feb76b4a569b8fd2a4 |
+| ReSukiSU source count | 4416（用于计算 35116） |
+| SUSFS | v2.2.0，兼容 commit 7767a46 |
+| 发布包 | release-r28/S25U-S938B-GKI-6.6.152-r28-ReSukiSU-v35116-SUSFS-FACCESSAT-HOTFIX-AK3.zip |
+| 发布包 SHA256 | df0f89dc146a4fd3ab99d3eb4651cdbf69af1776cda21e9ef74d987df5e554c1 |
+| 管理器 APK | release-r28/ReSukiSU_v4.2.0-rc1_35116-universal-release.apk |
+| 管理器 APK SHA256 | 104fff78340e7d41b1d016ae3de029c3974a0e494ba1671b3b8e4b0c722241d5 |
 
-源码构建已经完成，BUILD_RC=0；vmlinux、BTF、kallsyms、FIPS 处理和 Image 均成功。r22 是 boot-only 增量构建，使用与 r20/r21 相同哈希的配置和原始 LLVM 绝对前缀，只构建 Kbuild 选择的变更依赖；没有重建与 boot 无关的外置模块目标。二进制检查确认旧错误字符串为 0，且 `xhci_free_virt_device+0x54` 已变为条件 DCBAA 清理。
+R27 虽然构建成功，但真机在第一屏 panic。恢复到 r26 后读取 Samsung persistent
+last-kmsg，确认 `/data/adb/ksud post-fs-data` 触发
+`ksu_handle_faccessat+0x34`：旧调用方传入 `const char __user **`，v35116
+handler 却按 `struct filename **` 解引用。R28 补齐 SUSFS commit `e13f390` 的
+调用方路径转换，并完成新的全量 clean build，`BUILD_RC=0`。
 
-注意：上述 r22 包尚未由 Codex 自动刷入手机，也没有自动重启。刷写前必须由接管者自行确认当前 boot 备份、活动槽位和恢复路径。
+注意：R27 已撤回，禁止刷写；R28 尚未实机启动验证。刷写前必须确认当前
+boot 备份、活动槽位和恢复路径；r26 继续作为已知可启动回退版本。
 
 ## 3. 目录结构
 
 ~~~text
-s25-gki-android15-6.6-latest/
-├─ kernel/                         内核源码（当前修改在 kernel/power/suspend.c）
-├─ drivers/                        USB、ReSukiSU 等驱动源码
-├─ vendor-patches/                 未打包进 boot-only AK3 的 vendor 候选补丁
-├─ release-r21/                    可回退的 r21 AK3、管理器与清单
-├─ release-r22/                    当前待验证的 r22 xHCI 修复 AK3
-├─ build-r21/                      r21 Image、vmlinux、配置和日志
-├─ build-r22/                      r22 Image、vmlinux、配置、日志和清单
+s25_gki/
+├─ configs/                        可复用构建配置
+├─ docs/                           历史和当前版本文档
+├─ patches/                        S25 专项补丁
+├─ release-r26/                    已验证可启动的回退基线
+├─ release-r27/                    已撤回的失败构建，仅保留故障记录
+├─ release-r28/                    ReSukiSU v35116 faccessat 热修复候选
 ├─ S25-GKI-README.md               当前版本简述
 ├─ S25-SUSPEND-FIX.md              suspend workaround 与候选 vendor 方向
-├─ S25-XHCI-DETACH-FIX.md          已确认的 Type-C 拔出 panic 根因与 r22 修复
+├─ S25-XHCI-DETACH-FIX.md          已确认的 Type-C 拔出 panic 根因与修复
 ├─ SOURCE-PROVENANCE.md            源码来源和版本溯源
-├─ R21-CONTENTS.md                 目录和安全边界速查
+├─ R28-CONTENTS.md                 r28 目录和安全边界速查
 └─ README-S25-HANDOFF.md           本接管文档
 ~~~
 
-历史 out-r9 目录保留在源码树外的工作区中，只用于回溯，不能拿来冒充 r21 构建输入。旧的 30700 source-copy 备份也已移到工作区 backups/ 下。
+本 Git 仓库保存发布件、配置、补丁和复现文档，不直接提交完整内核源码树。r28 沿用 r27 的 ext4 源码树并应用 `patches/susfs/S25-R28-FACCESSAT-ABI-FIX.patch`；来源和哈希见 `release-r28/BUILD-MANIFEST.txt`。
 
 ## 4. 源码改动说明
 
@@ -99,9 +106,11 @@ if (s25_suspend_force_deep && state == PM_SUSPEND_TO_IDLE &&
 
 ### 4.4 ReSukiSU/SUSFS
 
-drivers/kernelsu/ 已同步到 ReSukiSU CI v35089 对应源码。源码拷贝没有父级 Git 元数据时，drivers/kernelsu/Kbuild 使用明确的 v35089 fallback，避免回退为旧的 30700/source-copy 身份；drivers/kernelsu/include/uapi/ 已 materialize 六个 UAPI 头文件。
+drivers/kernelsu/ 已同步到最新成功发布的 ReSukiSU CI v35116 对应源码。源码拷贝没有父级 Git 元数据时，drivers/kernelsu/Kbuild 使用明确的 v35116 fallback，避免回退为旧的 30700/source-copy 身份；drivers/kernelsu/include/uapi/ 已 materialize 所需 UAPI 头文件。SUSFS 仍为 v2.2.0，并同步到 ReSukiSU 新接口所需的兼容 commit `7767a46`。R28 进一步补齐 SUSFS commit `e13f390` 的 `struct filename` 调用方改动，修复 R27 的启动 panic。
 
 ## 5. 可复现构建
+
+以下 5.1/5.2 保留 r21/r22 的历史 Multipass 流程。r28 使用 WSL2 Ubuntu 26.04 的 native ext4 全量构建，精确输入、工具链、修复 commit 和产物哈希见 `release-r28/BUILD-MANIFEST.txt`；不要把两套输出目录混用。
 
 ### 5.1 构建环境
 
@@ -146,7 +155,7 @@ grep -E '^CONFIG_(KSU|KSU_SUSFS|DEBUG_INFO_BTF)=' /tmp/s25-out-native-r21/.confi
 
 ## 6. AK3 安全边界
 
-r21 是 boot-only、单独活动槽位写入的 AnyKernel3 包。anykernel.sh 的关键约束：
+r28 是 boot-only、单独活动槽位写入的 AnyKernel3 包。anykernel.sh 的关键约束：
 
 ~~~text
 block=boot
@@ -165,11 +174,11 @@ device.name2=pa3qxxx
 - 没有 flash_generic 或其他 vendor 分区写入调用；
 - 未设置 vbmeta patch。
 
-tools/ak3-core.sh 中仍可看到通用函数定义，但 r21 的 write_boot() 只执行 repack_ramdisk; flash_boot；不要根据未调用的通用函数误判包会写 vendor 分区。
+tools/ak3-core.sh 中仍可看到通用函数定义，但 r28 的 write_boot() 只执行 repack_ramdisk; flash_boot；不要根据未调用的通用函数误判包会写 vendor 分区。
 
 ## 7. 设备测试流程
 
-先在手机上保存当前可启动 boot 镜像，再进行 A/B 测试。首次只安装 r22，不要同时恢复旧的 vendor_dlkm、启用监测模块或叠加其他内核模块。
+先在手机上保存当前可启动 boot 镜像，再进行 A/B 测试。首次只安装 r28，不要同时恢复旧的 vendor_dlkm、启用监测模块或叠加其他内核模块。
 
 开机后先记录：
 
@@ -203,25 +212,25 @@ adb pull /data/local/tmp/dmesg-after-reboot.txt .
 1. 不要反复刷写，也不要先动 vendor_dlkm。
 2. 使用事先备份的原 boot 镜像，按设备已有的安全恢复流程恢复活动槽位。
 3. 若只能进入 Download/Odin，优先恢复已验证能开机的 boot/相关官方镜像；恢复后再读取 getprop ro.boot.slot_suffix 和内核版本。
-4. r21 不包含 vendor_dlkm，因此“还原 vendor_dlkm”不能替代还原 boot。
+4. r28 不包含 vendor_dlkm，因此“还原 vendor_dlkm”不能替代还原 boot。
 
 任何恢复动作都应由操作者确认目标槽位和镜像来源；本项目文档不执行自动刷机、重启或分区擦除。
 
 ## 9. 已知限制与下一步
 
-- r22 修复的是 last-kmsg 已证明的 xHCI 空指针；只有重复真机拔出测试后才能确认设备层结果。
-- 当前 deep-suspend 选择仍是独立 workaround，r22 为控制变量而保留，不能把它与 xHCI 根因修复混为一谈。
-- r21 使用 Ubuntu clang 18.1.3，不是 Samsung 官方 release compiler；跨工具链重建需重新做启动和稳定性验证。
+- r28 保留的是 last-kmsg 已证明的 xHCI 空指针修复；只有重复真机拔出测试后才能确认设备层结果。
+- 当前 deep-suspend 选择仍是独立 workaround，r28 为控制变量而保留，不能把它与 xHCI 根因修复混为一谈。
+- r28 使用 Ubuntu clang 18.1.8，不是 Samsung 官方 release compiler；跨工具链重建需重新做启动和稳定性验证。
 - 之前有“在早期 PM 注册阶段直接切 deep”导致卡第一屏的 r14 类失败方案，不能恢复该写法。
 - 设备稳定性尚未替代长期真实用户测试；一次长时间不复现不等于根因消失。
 - 若要做真正 vendor 层修复，需要取得匹配 SM-S938B/Android 16 的 Samsung 6.6.98（或对应版本）完整公开源码及模块 ABI，再针对 PDIC/USB-C suspend/resume 路径做最小补丁和独立 A/B。
 
 建议接管顺序：
 
-1. 先校验 release-r22/SHA256SUMS.txt，保存已知可启动 boot；
-2. 安装 r22 并完成移动硬盘/有线耳机拔出矩阵；
+1. 先校验 `release-r28/SHA256SUMS.txt`，保存已知可启动 boot 和 r26 回退包；
+2. 安装 r28 并完成首次启动、热点、移动硬盘/有线耳机拔出矩阵；
 3. 复现时优先收集 Samsung persistent last-kmsg 和 pstore；
-4. 只有在 r22 拔出基线稳定后，才逐项关闭 s25_suspend_force_deep、guard 或其他 USB hotfix 做 A/B；
+4. 只有在 r28 拔出基线稳定后，才逐项关闭 s25_suspend_force_deep、guard 或其他 USB hotfix 做 A/B；
 5. 修改源码后重新构建、更新清单/校验和，并保留可回退的 boot。
 
 ## 10. 相关文件和来源
@@ -231,11 +240,12 @@ adb pull /data/local/tmp/dmesg-after-reboot.txt .
 - [xHCI Type-C 拔出修复](S25-XHCI-DETACH-FIX.md)
 - [源码来源与版本溯源](SOURCE-PROVENANCE.md)
 - [r21 目录与安全边界](R21-CONTENTS.md)
-- [r22 发布包说明](release-r22/README.md)
-- [r22 构建清单](build-r22/BUILD-MANIFEST.txt)
+- [r28 目录与安全边界](R28-CONTENTS.md)
+- [r28 发布包说明](release-r28/README.md)
+- [r28 构建清单](release-r28/BUILD-MANIFEST.txt)
 - ReSukiSU 源码：[github.com/ReSukiSU/ReSukiSU](https://github.com/ReSukiSU/ReSukiSU)
-- 本次 ReSukiSU CI：[run 32561471902](https://github.com/ReSukiSU/ReSukiSU/actions/runs/32561471902)
-- 对应 CI release：[ReSukiSU_32561471902](https://github.com/cctv18/ReSukiSU_CI/releases/tag/ReSukiSU_32561471902)
+- 本次 ReSukiSU CI：[run 33939268200](https://github.com/ReSukiSU/ReSukiSU/actions/runs/33939268200)
+- 对应 CI release：[ReSukiSU_33939268200](https://github.com/cctv18/ReSukiSU_CI/releases/tag/ReSukiSU_33939268200)
 
 接管时如发现工作区与本文件不一致，以源码实际内容、BUILD-MANIFEST.txt 和 SHA256SUMS.txt 为准，并在本文件顶部更新日期和当前版本号。
 
@@ -254,3 +264,15 @@ r26 使用与已知可启动 r22 完全一致的 `.config`，在 Multipass `ai-l
 r26 仍是 boot-only：不含 `vendor_dlkm.img`、`system_dlkm`、LKM/KPM payload，不写 vendor 分区，不 patch vbmeta。Netfilter hotspot 相关 builtin 符号和 ReSukiSU/SUSFS 配置已在构建日志中复核。完整文件、日志、符号、配置和清单位于 `build-r26/`；包内说明位于 `release-r26/`。
 
 注意：r26 的“正常开机”不等于 USB-C 拔出/息屏死机根因已彻底消失，后续仍需按既定测试矩阵和 pstore/last-kmsg 流程验证。
+
+## 12. r27 失败记录与 r28 热修复（2026-09-07）
+
+r27 把 builtin ReSukiSU 从 v35089 同步到 CI 构建 v35116（commit `f7829ddf548a18b851d653feb76b4a569b8fd2a4`），但遗漏了 SUSFS 新 handler 所需的调用方路径转换，真机已确认启动 panic，因此撤回。r28 仅补齐 commit `e13f390` 对应的 `faccessat`/`stat` 调用方接口并重新全量构建。
+
+- R27：已撤回，禁止刷写
+- R28 包：`release-r28/S25U-S938B-GKI-6.6.152-r28-ReSukiSU-v35116-SUSFS-FACCESSAT-HOTFIX-AK3.zip`
+- R28 Image SHA-256：`e59c51f7973917604f0340638a5f55719baa399d14670cf1c1c6d759bab6accc`
+- 管理器 SHA-256：`104fff78340e7d41b1d016ae3de029c3974a0e494ba1671b3b8e4b0c722241d5`
+- R28 完整构建结果：`BUILD_RC=0`，构建日志未发现 compiler warning/error 行。
+
+r28 保持 boot-only：不包含 `.ko`、KPM/LKM、`vendor_dlkm.img`、`system_dlkm`、`vendor_boot` 或 `dtbo` payload，不修改 vbmeta。该包尚未通过真机启动和稳定性测试；首次测试前保存当前 boot，失败时回退 r26。
