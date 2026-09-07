@@ -10,8 +10,8 @@
 - ReSukiSU tag `v4.2.0-rc1`，SUSFS v2.2.0
 - 内置 builtin-only，不包含 LKM、KPM 或 `kernelsu.ko`
 - R27 已确认在 `ksu_handle_faccessat+0x34` 启动 panic，禁止刷写
-- 当前待测包为 `r28-ReSukiSU-v35116-SUSFS-FACCESSAT-HOTFIX`，仅写入活动槽位的 `boot`
-- r26 仍是用户确认可正常开机的回退基线
+- 当前已验证包为 `r28-ReSukiSU-v35116-SUSFS-FACCESSAT-HOTFIX`，用户确认成功开机
+- r26 继续保留为已验证回退基线
 - 不包含或写入 `vendor_dlkm`、`system_dlkm`、`vendor_boot`、`dtbo`
 - `patch_vbmeta_flag=0`、`no_vbmeta_partition_patch=1`
 

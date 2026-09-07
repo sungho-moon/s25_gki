@@ -46,7 +46,7 @@ Validation
 - ksu_handle_faccessat is present at ffffffc080dd6980
 - ksu_handle_faccessat+0x34 maps to sucompat.c:499
 - do_faccessat disassembly passes the address of its kernel fname slot
-- Device flash and reboot were not performed
+- User confirmed a successful device boot on 2026-09-07
 
 Artifacts
 ---------

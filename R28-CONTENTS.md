@@ -10,7 +10,7 @@
 - SUSFS：v2.2.0，compat commit `7767a46`
 - 修复：补齐 SUSFS commit `e13f390` 的 `faccessat`/`stat` 调用方接口
 - 构建：全量 clean build，`BUILD_RC=0`，0 compiler error，0 compiler warning
-- 状态：待用户实机刷写和启动验证；r26 仍是已确认可启动的回退基线
+- 状态：用户已确认成功开机；r26 继续保留为回退基线
 - 类型：boot-only AnyKernel3；不写 vendor 分区，不修改 vbmeta
 
 ## release-r28

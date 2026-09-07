@@ -17,4 +17,4 @@ The matching `vfs_statx()` guard/signature is included as well.
 No ReSukiSU, configuration, device workaround or AK3 partition-target changes
 were added. A new output directory was used for a full build, which completed
 Image, vmlinux, BTF, kallsyms, FIPS processing and module metadata with
-`BUILD_RC=0`. The resulting package has not yet been flashed or boot-tested.
+`BUILD_RC=0`. The user confirmed a successful device boot on 2026-09-07.

@@ -2,8 +2,8 @@
 
 > 更新时间：2026-09-07
 > 目标设备：Samsung Galaxy S25 Ultra，SM-S938B，pa3q/pa3qxxx
-> 当前已验证基线：Linux GKI 6.6.152，r26 FULL-CLEAN boot-only AK3（用户确认正常开机）
-> 最新待验证构建：r28，ReSukiSU v35116 faccessat hotfix（尚未刷机）
+> 当前已验证版本：Linux GKI 6.6.152，r28 ReSukiSU v35116 faccessat hotfix（用户确认成功开机）
+> 回退基线：r26 FULL-CLEAN boot-only AK3
 
 这份文档是给下一位维护者的“从哪里开始、哪些东西能刷、怎样复现和回退”的入口。源码根目录原有的 README.md 是 Android Common 上游补丁提交规范，不能代替本文件；先读本文件，再按需要阅读源码目录中的专项文档。
 
@@ -24,8 +24,8 @@
 | 项目 | 当前值 |
 | --- | --- |
 | Kernel release | 6.6.152-pe17667d-abogkiS938BXXU9CZDP-4k |
-| 已验证回退基线 | r26 FULL-CLEAN（用户确认正常开机） |
-| 最新待验证构建 | r28，builtin-only，R27 panic hotfix |
+| 当前已验证版本 | r28，builtin-only，R27 panic hotfix（用户确认成功开机） |
+| 已验证回退基线 | r26 FULL-CLEAN |
 | ReSukiSU | v4.2.0-rc1，版本码 35116 |
 | ReSukiSU commit | f7829ddf548a18b851d653feb76b4a569b8fd2a4 |
 | ReSukiSU source count | 4416（用于计算 35116） |
@@ -41,8 +41,8 @@ last-kmsg，确认 `/data/adb/ksud post-fs-data` 触发
 handler 却按 `struct filename **` 解引用。R28 补齐 SUSFS commit `e13f390` 的
 调用方路径转换，并完成新的全量 clean build，`BUILD_RC=0`。
 
-注意：R27 已撤回，禁止刷写；R28 尚未实机启动验证。刷写前必须确认当前
-boot 备份、活动槽位和恢复路径；r26 继续作为已知可启动回退版本。
+注意：R27 已撤回，禁止刷写；用户已于 2026-09-07 确认 R28 成功开机。
+后续仍需完成热点、USB-C 拔出和息屏稳定性测试；r26 继续作为已知可启动回退版本。
 
 ## 3. 目录结构
 
@@ -275,4 +275,4 @@ r27 把 builtin ReSukiSU 从 v35089 同步到 CI 构建 v35116（commit `f7829dd
 - 管理器 SHA-256：`104fff78340e7d41b1d016ae3de029c3974a0e494ba1671b3b8e4b0c722241d5`
 - R28 完整构建结果：`BUILD_RC=0`，构建日志未发现 compiler warning/error 行。
 
-r28 保持 boot-only：不包含 `.ko`、KPM/LKM、`vendor_dlkm.img`、`system_dlkm`、`vendor_boot` 或 `dtbo` payload，不修改 vbmeta。该包尚未通过真机启动和稳定性测试；首次测试前保存当前 boot，失败时回退 r26。
+r28 保持 boot-only：不包含 `.ko`、KPM/LKM、`vendor_dlkm.img`、`system_dlkm`、`vendor_boot` 或 `dtbo` payload，不修改 vbmeta。用户已确认成功开机；热点、USB-C 拔出和息屏稳定性仍需继续验证，异常时回退 r26。
