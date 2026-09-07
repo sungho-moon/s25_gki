@@ -18,6 +18,7 @@
 - `S25U-S938B-GKI-6.6.152-r28-ReSukiSU-v35116-SUSFS-FACCESSAT-HOTFIX-AK3.zip`：R27 启动 panic 热修复候选包
   - SHA-256：`df0f89dc146a4fd3ab99d3eb4651cdbf69af1776cda21e9ef74d987df5e554c1`
 - `ReSukiSU_v4.2.0-rc1_35116-universal-release.apk`：匹配管理器
+- `s25-gki-6.6.152-r28-source.tar.zst`：GitHub Release 中的完整可重建源码快照
 - `README.md`、`BUILD-MANIFEST.txt`：版本说明和构建清单
 - `S25-R28-BUILD-NOTES.md`：故障证据、根因和修复记录
 - `SHA256SUMS.txt`：发布包和管理器校验和

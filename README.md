@@ -1,163 +1,95 @@
-# S25 GKI 项目接管入口
+# Samsung Galaxy S25 Ultra GKI
 
-当前设备版源码、ReSukiSU 版本、boot-only AK3 边界、测试和恢复步骤，请先阅读 [README-S25-HANDOFF.md](README-S25-HANDOFF.md)。R27 已撤回；最新已验证可启动版本见 [R28-CONTENTS.md](R28-CONTENTS.md)，r26 继续保留为回退包。
+适用于 Samsung Galaxy S25 Ultra `SM-S938B`（`pa3q/pa3qxxx`）的
+Linux 6.6.152 GKI，内置 ReSukiSU v35116 与 SUSFS v2.2.0。
 
-以下内容保留 Android Common 上游的补丁提交规范。
+## 当前版本
 
----
+**R28 已由用户确认成功开机。** R27 因
+`ksu_handle_faccessat+0x34` 启动 panic 已撤回，禁止刷写。
 
-# How do I submit patches to Android Common Kernels
+| 项目 | 内容 |
+| --- | --- |
+| 内核 | `6.6.152-pe17667d-abogkiS938BXXU9CZDP-4k` |
+| ReSukiSU | `v4.2.0-rc1-f7829ddf@ReSukiSU` / 35116 |
+| SUSFS | v2.2.0 |
+| 安装包 | boot-only AnyKernel3 |
+| 已验证设备 | SM-S938B / pa3q |
+| 回退版本 | R26 FULL-CLEAN |
 
-1. BEST: Make all of your changes to upstream Linux. If appropriate, backport to the stable releases.
-   These patches will be merged automatically in the corresponding common kernels. If the patch is already
-   in upstream Linux, post a backport of the patch that conforms to the patch requirements below.
-   - Do not send patches upstream that contain only symbol exports. To be considered for upstream Linux,
-additions of `EXPORT_SYMBOL_GPL()` require an in-tree modular driver that uses the symbol -- so include
-the new driver or changes to an existing driver in the same patchset as the export.
-   - When sending patches upstream, the commit message must contain a clear case for why the patch
-is needed and beneficial to the community. Enabling out-of-tree drivers or functionality is not
-a persuasive case.
+## 下载
 
-2. LESS GOOD: Develop your patches out-of-tree (from an upstream Linux point-of-view). Unless these are
-   fixing an Android-specific bug, these are very unlikely to be accepted unless they have been
-   coordinated with kernel-team@android.com. If you want to proceed, post a patch that conforms to the
-   patch requirements below.
+推荐从 [GitHub Releases 的 v6.6.152-r28](https://github.com/sungho-moon/s25_gki/releases/tag/v6.6.152-r28)
+下载，不要使用聊天记录中的临时文件：
 
-# Common Kernel patch requirements
+- `S25U-S938B-GKI-6.6.152-r28-ReSukiSU-v35116-SUSFS-FACCESSAT-HOTFIX-AK3.zip`
+  — 可刷入的 AnyKernel3 包。
+- `ReSukiSU_v4.2.0-rc1_35116-universal-release.apk`
+  — 匹配的管理器。
+- `s25-gki-6.6.152-r28-source.tar.zst`
+  — 完整、可重新构建的源码快照。
+- `SHA256SUMS-r28.txt`
+  — 所有发布资产的 SHA-256。
 
-- All patches must conform to the Linux kernel coding standards and pass `scripts/checkpatch.pl`
-- Patches shall not break gki_defconfig or allmodconfig builds for arm, arm64, x86, x86_64 architectures
-(see  https://source.android.com/setup/build/building-kernels)
-- If the patch is not merged from an upstream branch, the subject must be tagged with the type of patch:
-`UPSTREAM:`, `BACKPORT:`, `FROMGIT:`, `FROMLIST:`, or `ANDROID:`.
-- All patches must have a `Change-Id:` tag (see https://gerrit-review.googlesource.com/Documentation/user-changeid.html)
-- If an Android bug has been assigned, there must be a `Bug:` tag.
-- All patches must have a `Signed-off-by:` tag by the author and the submitter
+AK3 包 SHA-256：
 
-Additional requirements are listed below based on patch type
-
-## Requirements for backports from mainline Linux: `UPSTREAM:`, `BACKPORT:`
-
-- If the patch is a cherry-pick from Linux mainline with no changes at all
-    - tag the patch subject with `UPSTREAM:`.
-    - add upstream commit information with a `(cherry picked from commit ...)` line
-    - Example:
-        - if the upstream commit message is
-```
-        important patch from upstream
-
-        This is the detailed description of the important patch
-
-        Signed-off-by: Fred Jones <fred.jones@foo.org>
-```
->- then Joe Smith would upload the patch for the common kernel as
-```
-        UPSTREAM: important patch from upstream
-
-        This is the detailed description of the important patch
-
-        Signed-off-by: Fred Jones <fred.jones@foo.org>
-
-        Bug: 135791357
-        Change-Id: I4caaaa566ea080fa148c5e768bb1a0b6f7201c01
-        (cherry picked from commit c31e73121f4c1ec41143423ac6ce3ce6dafdcec1)
-        Signed-off-by: Joe Smith <joe.smith@foo.org>
+```text
+df0f89dc146a4fd3ab99d3eb4651cdbf69af1776cda21e9ef74d987df5e554c1
 ```
 
-- If the patch requires any changes from the upstream version, tag the patch with `BACKPORT:`
-instead of `UPSTREAM:`.
-    - use the same tags as `UPSTREAM:`
-    - add comments about the changes under the `(cherry picked from commit ...)` line
-    - Example:
-```
-        BACKPORT: important patch from upstream
+仓库内也保留一份 [R28 AK3 包](release-r28/S25U-S938B-GKI-6.6.152-r28-ReSukiSU-v35116-SUSFS-FACCESSAT-HOTFIX-AK3.zip)。
 
-        This is the detailed description of the important patch
+## 安装前
 
-        Signed-off-by: Fred Jones <fred.jones@foo.org>
+1. 确认设备是 `SM-S938B/pa3q`，并保留当前可启动的 `boot.img`。
+2. 下载后核对 `SHA256SUMS-r28.txt`。
+3. 保留 [R26 回退包](release-r26/S25U-S938B-GKI-6.6.152-r26-FULL-CLEAN-ReSukiSU-SUSFS-AK3.zip)。
+4. 首次测试不要同时刷 vendor 模块、DTBO、vbmeta 或其他内核模块。
 
-        Bug: 135791357
-        Change-Id: I4caaaa566ea080fa148c5e768bb1a0b6f7201c01
-        (cherry picked from commit c31e73121f4c1ec41143423ac6ce3ce6dafdcec1)
-        [joe: Resolved minor conflict in drivers/foo/bar.c ]
-        Signed-off-by: Joe Smith <joe.smith@foo.org>
-```
+在设备现有的 Recovery/AnyKernel3 流程中直接刷入 ZIP。这个包只处理活动槽位的
+`boot`，不包含 `.ko`、KPM/LKM、`vendor_dlkm`、`system_dlkm`、`vendor_boot`
+或 `dtbo`，也不修改 vbmeta。
 
-## Requirements for other backports: `FROMGIT:`, `FROMLIST:`,
+如果卡第一屏或循环重启，恢复之前备份的 boot，或刷回 R26。不要用 R27。
 
-- If the patch has been merged into an upstream maintainer tree, but has not yet
-been merged into Linux mainline
-    - tag the patch subject with `FROMGIT:`
-    - add info on where the patch came from as `(cherry picked from commit <sha1> <repo> <branch>)`. This
-must be a stable maintainer branch (not rebased, so don't use `linux-next` for example).
-    - if changes were required, use `BACKPORT: FROMGIT:`
-    - Example:
-        - if the commit message in the maintainer tree is
-```
-        important patch from upstream
+## 开机后检查
 
-        This is the detailed description of the important patch
-
-        Signed-off-by: Fred Jones <fred.jones@foo.org>
-```
->- then Joe Smith would upload the patch for the common kernel as
-```
-        FROMGIT: important patch from upstream
-
-        This is the detailed description of the important patch
-
-        Signed-off-by: Fred Jones <fred.jones@foo.org>
-
-        Bug: 135791357
-        (cherry picked from commit 878a2fd9de10b03d11d2f622250285c7e63deace
-         https://git.kernel.org/pub/scm/linux/kernel/git/foo/bar.git test-branch)
-        Change-Id: I4caaaa566ea080fa148c5e768bb1a0b6f7201c01
-        Signed-off-by: Joe Smith <joe.smith@foo.org>
+```sh
+adb shell su -c 'cat /proc/version'
+adb shell su -c 'cat /sys/power/mem_sleep'
+adb shell su -c 'cat /sys/module/suspend/parameters/s25_suspend_force_deep'
 ```
 
+成功开机只证明启动问题已解决。热点、USB-C 存储/耳机拔出、息屏与唤醒仍应
+继续测试；异常后优先保存 `/data/log/dumpstate_lastkmsg_*` 和
+`/sys/fs/pstore`。
 
-- If the patch has been submitted to LKML, but not accepted into any maintainer tree
-    - tag the patch subject with `FROMLIST:`
-    - add a `Link:` tag with a link to the submittal on lore.kernel.org
-    - add a `Bug:` tag with the Android bug (required for patches not accepted into
-a maintainer tree)
-    - if changes were required, use `BACKPORT: FROMLIST:`
-    - Example:
-```
-        FROMLIST: important patch from upstream
+## 本地数据丢失后继续维护
 
-        This is the detailed description of the important patch
+GitHub Release 保存完整源码快照，仓库保存配置、补丁、构建脚本和发布清单。
+新电脑只需要 Git、WSL2/Ubuntu、LLVM 18 和足够的磁盘空间：
 
-        Signed-off-by: Fred Jones <fred.jones@foo.org>
+```sh
+git clone https://github.com/sungho-moon/s25_gki.git
+cd s25_gki
 
-        Bug: 135791357
-        Link: https://lore.kernel.org/lkml/20190619171517.GA17557@someone.com/
-        Change-Id: I4caaaa566ea080fa148c5e768bb1a0b6f7201c01
-        Signed-off-by: Joe Smith <joe.smith@foo.org>
+# 下载并在 WSL 的 Linux 文件系统中解压源码，不能放在 /mnt/c
+tar --zstd -xf s25-gki-6.6.152-r28-source.tar.zst -C "$HOME"
+
+JOBS=12 bash build/build-r28.sh "$HOME/s25-gki-6.6.152-r28-source"
 ```
 
-- If a patch has been submitted to the community, but rejected, do NOT use the
-  `FROMLIST:` tag to try to hide this fact.  Use the `ANDROID:` tag as
-  described below as this must be considered as an Android-specific submission,
-  not an upstream submission as the community will not accept these changes
-  as-is.
+构建结果默认位于源码同级的 `out-r28/`。完整恢复步骤、依赖、验证和重新打包
+方法见 [维护恢复指南](docs/MAINTENANCE-RECOVERY.md)。精确来源与哈希见
+[R28 构建清单](release-r28/BUILD-MANIFEST.txt)。
 
-## Requirements for Android-specific patches: `ANDROID:`
+## 目录
 
-- If the patch is fixing a bug to Android-specific code
-    - tag the patch subject with `ANDROID:`
-    - add a `Fixes:` tag that cites the patch with the bug
-    - Example:
-```
-        ANDROID: fix android-specific bug in foobar.c
+- `release-r28/`：当前 AK3、管理器、校验和与发布说明。
+- `release-r26/`：已验证回退包。
+- `configs/`：完整内核配置。
+- `patches/`：S25、SUSFS 专项补丁。
+- `build/`：可复用构建脚本。
+- `docs/`：故障分析、构建记录和维护文档。
 
-        This is the detailed description of the important fix
-
-        Fixes: 1234abcd2468 ("foobar: add cool feature")
-        Change-Id: I4caaaa566ea080fa148c5e768bb1a0b6f7201c01
-        Signed-off-by: Joe Smith <joe.smith@foo.org>
-```
-
-- If the patch is a new feature
-    - tag the patch subject with `ANDROID:`
-    - add a `Bug:` tag with the Android bug (required for android-specific features)
+这是针对指定设备和固件基础的实验内核，不保证兼容其他 S25 型号或固件。

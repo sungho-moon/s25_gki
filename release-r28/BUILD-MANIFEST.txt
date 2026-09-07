@@ -50,6 +50,8 @@ Validation
 
 Artifacts
 ---------
+- Source snapshot: s25-gki-6.6.152-r28-source.tar.zst, 174,587,325 bytes
+  SHA256: 7b1c33c8be65b25b1886b2d5762b81cca1eeb84f22a92aa836ea5a86a4fd6cde
 - Image: 38,791,680 bytes
   SHA256: e59c51f7973917604f0340638a5f55719baa399d14670cf1c1c6d759bab6accc
 - Image.config: 214,433 bytes
