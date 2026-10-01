@@ -15,7 +15,7 @@ Linux 6.6.152 GKI，内置 ReSukiSU v35116 与 SUSFS v2.2.0。
 ## 下载
 
 推荐从 [GitHub Releases 的 v6.6.152-r28](https://github.com/sungho-moon/s25_gki/releases/tag/v6.6.152-r28)
-下载，不要使用聊天记录中的临时文件：
+下载
 
 - `S25U-S938B-GKI-6.6.152-r28-ReSukiSU-v35116-SUSFS-FACCESSAT-HOTFIX-AK3.zip`
   — 可刷入的 AnyKernel3 包。
