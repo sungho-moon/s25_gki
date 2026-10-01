@@ -3,11 +3,6 @@
 适用于 Samsung Galaxy S25 Ultra `SM-S938B`（`pa3q/pa3qxxx`）的
 Linux 6.6.152 GKI，内置 ReSukiSU v35116 与 SUSFS v2.2.0。
 
-## 当前版本
-
-**R28 已由用户确认成功开机。** R27 因
-`ksu_handle_faccessat+0x34` 启动 panic 已撤回，禁止刷写。
-
 | 项目 | 内容 |
 | --- | --- |
 | 内核 | `6.6.152-pe17667d-abogkiS938BXXU9CZDP-4k` |
@@ -41,33 +36,15 @@ df0f89dc146a4fd3ab99d3eb4651cdbf69af1776cda21e9ef74d987df5e554c1
 
 ## 安装前
 
-1. 确认设备是 `SM-S938B/pa3q`，并保留当前可启动的 `boot.img`。
-2. 下载后核对 `SHA256SUMS-r28.txt`。
-3. 保留 [R26 回退包](release-r26/S25U-S938B-GKI-6.6.152-r26-FULL-CLEAN-ReSukiSU-SUSFS-AK3.zip)。
-4. 首次测试不要同时刷 vendor 模块、DTBO、vbmeta 或其他内核模块。
+确认设备是 `SM-S938B/pa3q`，并保留当前可启动的 `boot.img`。
 
-在设备现有的 Recovery/AnyKernel3 流程中直接刷入 ZIP。这个包只处理活动槽位的
-`boot`，不包含 `.ko`、KPM/LKM、`vendor_dlkm`、`system_dlkm`、`vendor_boot`
-或 `dtbo`，也不修改 vbmeta。
+在设备现有的 Twrp/AnyKernel3刷写工具 中直接刷入 ZIP。这个包只处理活动槽位的
+`boot`。
 
-如果卡第一屏或循环重启，恢复之前备份的 boot，或刷回 R26。不要用 R27。
-
-## 开机后检查
-
-```sh
-adb shell su -c 'cat /proc/version'
-adb shell su -c 'cat /sys/power/mem_sleep'
-adb shell su -c 'cat /sys/module/suspend/parameters/s25_suspend_force_deep'
-```
-
-成功开机只证明启动问题已解决。热点、USB-C 存储/耳机拔出、息屏与唤醒仍应
-继续测试；异常后优先保存 `/data/log/dumpstate_lastkmsg_*` 和
-`/sys/fs/pstore`。
-
-## 本地数据丢失后继续维护
+如果卡第一屏或循环重启，用Odin刷写之前备份的 boot (需要压缩成.tar)
 
 GitHub Release 保存完整源码快照，仓库保存配置、补丁、构建脚本和发布清单。
-新电脑只需要 Git、WSL2/Ubuntu、LLVM 18 和足够的磁盘空间：
+维护只需要 Git、WSL2/Ubuntu、LLVM 18 和足够的磁盘空间：
 
 ```sh
 git clone https://github.com/sungho-moon/s25_gki.git
