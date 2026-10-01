@@ -8,7 +8,7 @@ Linux 6.6.152 GKI，内置 ReSukiSU v35116 与 SUSFS v2.2.0。
 | 内核 | `6.6.152-pe17667d-abogkiS938BXXU9CZDP-4k` |
 | ReSukiSU | `v4.2.0-rc1-f7829ddf@ReSukiSU` / 35116 |
 | SUSFS | v2.2.0 |
-| 安装包 | boot-only AnyKernel3 |
+| 安装包 | boot AnyKernel3 |
 | 已验证设备 | SM-S938B / pa3q |
 | 回退版本 | R26 FULL-CLEAN |
 
